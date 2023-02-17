@@ -100,30 +100,30 @@ Fixpoint expr_to_str (e : s_expr) : string :=
   match e with
   | s_expr_var x => x
   | s_expr_val σ => val_to_str σ
-  | s_expr_new c => "(new " ++ c ++ ")"
+  | s_expr_new c => "new " ++ c
   | s_expr_getfield e1 fname => "(" ++ expr_to_str e1 ++ "." ++ fname ++ ")"
   | s_expr_putfield e1 fname e2 => "(" ++ expr_to_str e1 ++ "." ++ fname ++ " := " ++ expr_to_str e2 ++ ")"
   | s_expr_let x e1 e2 => "let " ++ x ++ " := " ++ expr_to_str e1 ++ " in " ++ expr_to_str e2
   | s_expr_add e1 e2 => "(" ++ expr_to_str e1 ++ " + " ++ expr_to_str e2 ++ ")"
   | s_expr_eq e1 e2 => "(" ++ expr_to_str e1 ++ " = " ++ expr_to_str e2 ++ ")"
-  | s_expr_instanceof e1 c =>  expr_to_str e1 ++ " instanceof " ++ c
-  | s_expr_if e1 e2 e3 => "if " ++ expr_to_str e1 ++ " then " ++expr_to_str e2 ++ " else " ++ expr_to_str e3
+  | s_expr_instanceof e1 c =>  "(" ++ expr_to_str e1 ++ " instanceof " ++ c ++ ")"
+  | s_expr_if e1 e2 e3 => "if " ++ expr_to_str e1 ++ " then " ++ expr_to_str e2 ++ " else " ++ expr_to_str e3
   | s_expr_invoke e1 m e2 => "(" ++ expr_to_str e1 ++ "." ++ m ++ "[" ++ expr_to_str e2 ++ "])"
   end.
 
-Definition dc_v_to_str (F : s_dc_v) : string :=
+Definition dc_v_to_str (semicolon : bool) (F : s_dc_v) : string :=
   match F with
-  | s_dc_v_l t x => ty_to_str t ++ " " ++ x
+  | s_dc_v_l t x => ty_to_str t ++ " " ++ x ++ (if semicolon then ";" else "")
   end.
 
 Definition dc_m_to_str (D : s_dc_m) : string :=
   match D with
-  | s_dc_m_l t m v e => ty_to_str t ++ " " ++ m ++ "(" ++ dc_v_to_str v ++ ") := " ++ expr_to_str e
+  | s_dc_m_l t m v e => ty_to_str t ++ " " ++ m ++ "(" ++ dc_v_to_str false v ++ ") := " ++ expr_to_str e ++ ";"
   end.
 
 Definition dc_c_to_str (C : s_dc_c) : string :=
   match C with
-  | s_dc_c_l c csup Fs Ds => "class " ++ c ++ (if String.eqb csup "" then "" else (" extends " ++ csup)) ++ " { " ++ (String.concat "; " (List.map dc_v_to_str Fs)) ++ " " ++ (String.concat "; " (List.map dc_m_to_str Ds)) ++ "}"
+  | s_dc_c_l c csup Fs Ds => "class " ++ c ++ (if String.eqb csup "" then "" else (" extends " ++ csup)) ++ " { " ++ (String.concat " " (List.map (dc_v_to_str true) Fs)) ++ " " ++ (String.concat " " (List.map dc_m_to_str Ds)) ++ "}"
   end.
 
 Definition prg_to_str (P : s_prg) : string :=

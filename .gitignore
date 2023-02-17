@@ -2,6 +2,7 @@
 CoqMakefile
 CoqMakefile.conf
 *.glob
+*.hs
 *.vo
 *.vok
 *.vos

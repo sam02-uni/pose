@@ -344,6 +344,8 @@ Definition P10 : s_prg := s_prg_l [CObject ; C10_1] e10.
 
 Compute prg_to_str P10.
 
+Compute parse "class Object {  } class Class1 extends Object { Class1 f; } let x := (Y0.f) in (Y1.f := x)".
+
 Compute step_to_str (step_at P10 0).
 Compute step_to_str (step_at P10 1).
 Compute step_to_str (step_at P10 2).
@@ -362,6 +364,8 @@ Definition C11_1 : s_dc_c :=
 Definition P11 : s_prg := s_prg_l [CObject ; C11_1] e11.
 
 Compute prg_to_str P11.
+
+Compute parse "class Object {  } class Class1 extends Object { Class1 f; } let x := (Y1.f) in let y := (Y0.f) in (y.f := x)".
 
 Compute step_to_str (step_at P11 0).
 Compute step_to_str (step_at P11 1).
