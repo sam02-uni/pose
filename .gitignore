@@ -2,6 +2,7 @@
 #*
 CoqMakefile
 CoqMakefile.conf
+.CoqMakefile.d
 *.aux
 *.cache
 *.glob
