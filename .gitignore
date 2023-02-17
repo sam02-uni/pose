@@ -1,9 +1,11 @@
 *~
+#*
 CoqMakefile
 CoqMakefile.conf
+*.aux
+*.cache
 *.glob
 *.hs
 *.vo
 *.vok
 *.vos
-
