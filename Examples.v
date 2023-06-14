@@ -153,19 +153,21 @@ Admitted.*)
 
 (* Computes 3 + 2 *)
 
+Compute parse "class Object {  } (2 + 3)".
+
 Definition e1 : s_expr := s_expr_add (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l 2)))) (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l 3)))).
 
 Definition P1 : s_prg := s_prg_l [CObject] e1.
 
 Compute prg_to_str P1.
 
-Compute parse "class Object {  } (2 + 3)".
-
 Compute step_to_str (step_at P1 0).
 Compute step_to_str (step_at P1 1).
 Compute step_to_str (step_at P1 2).
 
 (* Computes 3 + 2 via method call *)
+
+Compute parse "class Object {  } class Class1 extends Object {  int m(int x) := (2 + x); } (new Class1.m[3])".
 
 Definition C2_1 : s_dc_c :=
   s_dc_c_l "Class1" "Object" []
@@ -178,8 +180,6 @@ Definition P2 : s_prg := s_prg_l [CObject ; C2_1] e2.
 
 Compute prg_to_str P2.
 
-Compute parse "class Object {  } class Class1 extends Object {  int m(int x) := (2 + x); } (new Class1.m[3])".
-
 Compute step_to_str (step_at P2 0).
 Compute step_to_str (step_at P2 1).
 Compute step_to_str (step_at P2 2).
@@ -188,13 +188,13 @@ Compute step_to_str (step_at P2 4).
 
 (* Computes let x = X0 in if x = 2 then true else false *)
 
+Compute parse "class Object {  } let x := X0 in if (x = 2) then true else false".
+
 Definition e3 : s_expr := s_expr_let "x" (s_expr_val (s_val_prim_c (s_prim_c_symb (s_symb_expr 0)))) (s_expr_if (s_expr_eq (s_expr_var "x") (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l 2))))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)))).
 
 Definition P3 : s_prg := s_prg_l [CObject] e3.
 
 Compute prg_to_str P3.
-
-Compute parse "class Object {  } let x := X0 in if (x = 2) then true else false".
 
 Compute step_to_str (step_at P3 0).
 Compute step_to_str (step_at P3 1).
@@ -203,6 +203,8 @@ Compute step_to_str (step_at P3 3).
 Compute step_to_str (step_at P3 4).
 
 (* Computes Y0.f; Class1 has field f. *)
+
+Compute parse "class Object {  } class Class1 extends Object { int f; } (Y0.f)".
 
 Definition e4 : s_expr := s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0)))) "f".
 
@@ -214,13 +216,13 @@ Definition P4 : s_prg := s_prg_l [CObject ; C4_1] e4.
 
 Compute prg_to_str P4.
 
-Compute parse "class Object {  } class Class1 extends Object { int f; } (Y0.f)".
-
 Compute step_to_str (step_at P4 0).
 Compute step_to_str (step_at P4 1).
 Compute step_to_str (step_at P4 2).
 
 (* Computes Y0.f + Y0.g; Class1 has field f and Class2 <: Class1 has field g. *)
+
+Compute parse "class Object {  } class Class1 extends Object { int f; } class Class2 extends Class1 { int g; } let x := (Y0.f) in (x + (Y0.g))".
 
 Definition e5 : s_expr := s_expr_let "x" (s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0)))) "f") (s_expr_add (s_expr_var "x") (s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0)))) "g")).
 
@@ -236,8 +238,6 @@ Definition P5 : s_prg := s_prg_l [CObject ; C5_1 ; C5_2] e5.
 
 Compute prg_to_str P5.
 
-Compute parse "class Object {  } class Class1 extends Object { int f; } class Class2 extends Class1 { int g; } let x := (Y0.f) in (x + (Y0.g))".
-
 Compute step_to_str (step_at P5 0).
 Compute step_to_str (step_at P5 1).
 Compute step_to_str (step_at P5 2).
@@ -246,6 +246,8 @@ Compute step_to_str (step_at P5 4).
 Compute step_to_str (step_at P5 5).
 
 (* Computes Y0.f + Y1.f; Class1 has field f. *)
+
+Compute parse "class Object {  } class Class1 extends Object { int f; } let x := (Y0.f) in (x + (Y1.f))".
 
 Definition e6 : s_expr := s_expr_let "x" (s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0)))) "f") (s_expr_add (s_expr_var "x") (s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 1)))) "f")).
 
@@ -257,8 +259,6 @@ Definition P6 : s_prg := s_prg_l [CObject ; C6_1] e6.
 
 Compute prg_to_str P6.
 
-Compute parse "class Object {  } class Class1 extends Object { int f; } let x := (Y0.f) in (x + (Y1.f))".
-
 Compute step_to_str (step_at P6 0).
 Compute step_to_str (step_at P6 1).
 Compute step_to_str (step_at P6 2).
@@ -267,6 +267,8 @@ Compute step_to_str (step_at P6 4).
 Compute step_to_str (step_at P6 5).
 
 (* Computes Y0.f + (Y1.f + Y2.f); Class1 has field f. *)
+
+Compute parse "class Object {  } class Class1 extends Object { int f; } let x := (Y0.f) in let y := (Y1.f) in (x + (y + (Y2.f)))".
 
 Definition e7 : s_expr := s_expr_let "x" (s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0)))) "f")  (s_expr_let "y" (s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 1)))) "f") (s_expr_add (s_expr_var "x") (s_expr_add (s_expr_var "y") (s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 2)))) "f")))).
 
@@ -277,8 +279,6 @@ Definition C7_1 : s_dc_c :=
 Definition P7 : s_prg := s_prg_l [CObject ; C7_1] e7.
 
 Compute prg_to_str P7.
-
-Compute parse "class Object {  } class Class1 extends Object { int f; } let x := (Y0.f) in let y := (Y1.f) in (x + (y + (Y2.f)))".
 
 Compute step_to_str (step_at P7 0).
 Compute step_to_str (step_at P7 1).
@@ -291,6 +291,8 @@ Compute step_to_str (step_at P7 7).
 Compute step_to_str (step_at P7 8).
 
 (* Computes Y0.f.g; Class1 has field f, Class2 has field g. *)
+
+Compute parse "class Object {  } class Class1 extends Object { Class2 f; } class Class2 extends Object { int g; } ((Y0.f).g)".
 
 Definition e8 : s_expr := s_expr_getfield (s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0)))) "f") "g".
 
@@ -306,14 +308,14 @@ Definition P8 : s_prg := s_prg_l [CObject ; C8_1 ; C8_2] e8.
 
 Compute prg_to_str P8.
 
-Compute parse "class Object {  } class Class1 extends Object { Class2 f; } class Class2 extends Object { int g; } ((Y0.f).g)".
-
 Compute step_to_str (step_at P8 0).
 Compute step_to_str (step_at P8 1).
 Compute step_to_str (step_at P8 2).
 Compute step_to_str (step_at P8 3).
 
 (* Computes Y0.f.g; Class1 has fields f and g. *)
+
+Compute parse "class Object {  } class Class1 extends Object { Class1 f; int g; } ((Y0.f).g)".
 
 Definition e9 : s_expr := s_expr_getfield (s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0)))) "f") "g".
 
@@ -325,14 +327,14 @@ Definition P9 : s_prg := s_prg_l [CObject ; C9_1] e9.
 
 Compute prg_to_str P9.
 
-Compute parse "class Object {  } class Class1 extends Object { Class1 f; int g; } ((Y0.f).g)".
-
 Compute step_to_str (step_at P9 0).
 Compute step_to_str (step_at P9 1).
 Compute step_to_str (step_at P9 2).
 Compute step_to_str (step_at P9 3).
 
 (* Computes Y1.f := Y0.f, with Y1.f evaluated after Y0.f; Class1 has field f. *)
+
+Compute parse "class Object {  } class Class1 extends Object { Class1 f; } let x := (Y0.f) in (Y1.f := x)".
 
 Definition e10 : s_expr := s_expr_let "x" (s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0)))) "f") (s_expr_putfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 1)))) "f"  (s_expr_var "x")).
 
@@ -344,16 +346,15 @@ Definition P10 : s_prg := s_prg_l [CObject ; C10_1] e10.
 
 Compute prg_to_str P10.
 
-Compute parse "class Object {  } class Class1 extends Object { Class1 f; } let x := (Y0.f) in (Y1.f := x)".
-
 Compute step_to_str (step_at P10 0).
 Compute step_to_str (step_at P10 1).
 Compute step_to_str (step_at P10 2).
 Compute step_to_str (step_at P10 3).
 Compute step_to_str (step_at P10 4).
 
-
 (* Computes Y0.f.f := Y1.f, with Y1.f evaluated before Y0.f (so Y0.f contains an ite); Class1 has field f. *)
+
+Compute parse "class Object {  } class Class1 extends Object { Class1 f; } let x := (Y1.f) in let y := (Y0.f) in (y.f := x)".
 
 Definition e11 : s_expr := s_expr_let "x" (s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 1)))) "f") (s_expr_let "y" (s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0)))) "f") (s_expr_putfield (s_expr_var "y") "f"  (s_expr_var "x"))).
 
@@ -365,8 +366,6 @@ Definition P11 : s_prg := s_prg_l [CObject ; C11_1] e11.
 
 Compute prg_to_str P11.
 
-Compute parse "class Object {  } class Class1 extends Object { Class1 f; } let x := (Y1.f) in let y := (Y0.f) in (y.f := x)".
-
 Compute step_to_str (step_at P11 0).
 Compute step_to_str (step_at P11 1).
 Compute step_to_str (step_at P11 2).
@@ -374,3 +373,45 @@ Compute step_to_str (step_at P11 3).
 Compute step_to_str (step_at P11 4).
 Compute step_to_str (step_at P11 5).
 Compute step_to_str (step_at P11 6).
+
+(* Figure 1a from paper *)
+
+Compute parse "class Object { } class Void extends Object { } class Container extends Object { Object data; Void swap(Container c) := if (c = null) then new Void else let e := (this.data) in let foo := (this.data := (c.data)) in let baz := (c.data := e) in new Void; } let y0 := Y0 in let y1 := Y1 in (y0.swap[y1])". 
+
+Definition e12 : s_expr :=
+  (s_expr_let "y0" (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0))))
+     (s_expr_let "y1" (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 1))))
+        (s_expr_invoke (s_expr_var "y0") "swap" (s_expr_var "y1")))).
+
+Definition CVoid : s_dc_c :=
+  s_dc_c_l "Void" "Object" [] [].
+  
+Definition C12_1 : s_dc_c :=
+  s_dc_c_l "Container" "Object"
+    [s_dc_v_l (s_ty_class "Object") "data"]
+    [s_dc_m_l (s_ty_class "Void") "swap"
+       (s_dc_v_l (s_ty_class "Container") "c")
+       (s_expr_if (s_expr_eq (s_expr_var "c") (s_expr_val (s_val_ref_c s_ref_c_null))) (s_expr_new "Void")
+          (s_expr_let "e" (s_expr_getfield (s_expr_var "this") "data")
+             (s_expr_let "foo" (s_expr_putfield (s_expr_var "this") "data" (s_expr_getfield (s_expr_var "c") "data"))
+                (s_expr_let "baz" (s_expr_putfield (s_expr_var "c") "data" (s_expr_var "e")) (s_expr_new "Void")))))].
+
+Definition P12 : s_prg := s_prg_l [CObject ; CVoid ; C12_1] e12.
+
+Compute prg_to_str P12.
+
+Compute step_to_str (step_at P12 0).
+Compute step_to_str (step_at P12 1).
+Compute step_to_str (step_at P12 2).
+Compute step_to_str (step_at P12 3).
+Compute step_to_str (step_at P12 4).
+Compute step_to_str (step_at P12 5).
+Compute step_to_str (step_at P12 6).
+Compute step_to_str (step_at P12 7).
+Compute step_to_str (step_at P12 8).
+Compute step_to_str (step_at P12 9).
+Compute step_to_str (step_at P12 10).
+Compute step_to_str (step_at P12 11).
+Compute step_to_str (step_at P12 12).
+Compute step_to_str (step_at P12 13).
+Compute step_to_str (step_at P12 14).
