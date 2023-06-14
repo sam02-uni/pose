@@ -84,7 +84,7 @@ Qed.
 
 (* The refinement step function *)
 
-Let Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : option (heap * path_condition) :=
+Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : option (heap * path_condition) :=
   match e with
   | s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb s))) f =>
     let Y := s_ref_c_symb s in
@@ -98,7 +98,7 @@ Let Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) :
       let cl2 := clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c)) in
       let Σ' := Σ ++ [cl1 ; cl2] in
       Some (H', Σ')
-    | _ => None
+    | _ => None (* error: no class in P has field f *)
     end
     else match obj_at H Y with
     | Some o => match get o f with
@@ -110,7 +110,7 @@ Let Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) :
           let cl := clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) in
           let Σ' := Σ ++ [cl] in
           Some (H', Σ')
-        | _ => None
+        | _ => None (* error: no class in P has field f *)
         end
       | Some s_val_unassumed => match assume_c H Y f with
         | Some (σ, s_ref_c_symb s') =>
@@ -121,11 +121,11 @@ Let Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) :
           Some (H', Σ')
         | _ => None
         end
-      | _ => None
+      | _ => None (* error: the symbolic object's field was refined before *)
       end
-    | _ => None
+    | _ => None (* error: symbolic reference is resolved but no associated symbolic object is in the heap *)
     end
-  | s_expr_putfield (s_expr_val (s_val_ref_c (s_ref_c_symb s))) f v =>
+  | s_expr_putfield (s_expr_val (s_val_ref_c (s_ref_c_symb s))) f (s_expr_val σ) =>
     let Y := s_ref_c_symb s in
     if unresolved_c H s then
     match class_with_field P f with
@@ -183,7 +183,7 @@ Let Fixpoint rstep_c_star_bounded (P : s_prg) (H : heap) (Σ : path_condition) (
   | _, _ => None
   end.
 
-Let rstep_c_star  (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : option (heap * path_condition) :=
+Definition rstep_c_star  (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : option (heap * path_condition) :=
   rstep_c_star_bounded P H Σ e 2.
 
 
@@ -211,9 +211,9 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
       | Some σ =>
         let e' := s_expr_val σ in
         [(H, Σ, e')]
-      | _ => []
+      | _ => [] (* error: field not present in the concrete object *)
       end
-    | _ => []
+    | _ => [] (* error: no concrete object in the heap corresponding to the concrete reference *)
     end
   | s_expr_getfield (s_expr_val (s_val_ref_c (s_ref_c_symb s))) f =>
     let Y := s_ref_c_symb s in
@@ -355,8 +355,8 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
     concat (List.map (fun c' =>
       match mdecl P c' m with
       | Some (s_dc_m_l t1 m (s_dc_v_l t2 xM) eM) =>
-        let B := overriders P m c' in
-        let Σ' := Σ ++ List.map (fun c => clause_neg (s_val_subtype (s_val_ref_c Y) (s_ty_class c))) B in
+        let O := overriders P m c' in
+        let Σ' := Σ ++ [clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c'))] ++ List.map (fun c => clause_neg (s_val_subtype (s_val_ref_c Y) (s_ty_class c))) O in
         let e' := repl_var (repl_var eM "this" (s_expr_val (s_val_ref_c Y))) xM (s_expr_val σ) in
         [(H, Σ', e')]
       | _ => []

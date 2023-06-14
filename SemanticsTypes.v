@@ -296,10 +296,16 @@ End ClassWithFieldDefs.
 Definition implementors (P : s_prg) (m : string) : list string :=
   map class_name (filter (fun C => class_has_method_c C m) (classes P)).
 
+(* Class c overrides definition of method m in class c', i.e., 
+   c differs from c', c sees m from c', and c redefines m. *)
+Definition overrides (P : s_prg) (m : string) : relation string :=
+  fun (c c' : string) =>
+    sees_method P m c c' /\ has_method P m c /\ c <> c'.
+
 (* Returns the names of all the classes that override a method m declared
-   in a class with name c'. *)
+   in a class with name c' (computable version of overrides. *)
 Definition overriders (P : s_prg) (m : string) (c' : string) : list string :=
-  map class_name (filter (fun C => sees_method_c P m (class_name C) c' && class_has_method_c C m) (classes P)).
+  map class_name (filter (fun C => sees_method_c P m (class_name C) c' && class_has_method_c C m && negb (String.eqb (class_name C) c')) (classes P)).
 
 Section NewRefineObjDecls.
 
