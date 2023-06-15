@@ -20,47 +20,47 @@ Set Asymmetric Patterns.
 
 Section AssumeDefs.
   
-Let Fixpoint assume_fp (Helts : list (s_ref_c * object)) (s : s_symb) (f : string) (σPart : s_val) (σ : s_val) : Prop :=
+Let Fixpoint assume_fp (Helts : list (s_ref_c * object)) (s : s_symb) (f : string) (σPart : s_val) (σ : s_val) (Z : s_ref_c) : Prop :=
   match Helts with
   | [] => σ = σPart
-  | (s_ref_c_symb s', o') :: other_Helts => if s_symb_eqb s s' then assume_fp other_Helts s f σPart σ
+  | (s_ref_c_symb s', o') :: other_Helts => if s_symb_eqb s s' then assume_fp other_Helts s f σPart σ Z
     else match get o' f with
-    | None => assume_fp other_Helts s f σPart σ
+    | None => assume_fp other_Helts s f σPart σ Z
     | Some σ' => if s_val_eqb σ' s_val_unassumed then
-                 assume_fp other_Helts s f σPart σ
+                 assume_fp other_Helts s f σPart σ Z
                  else
-                 assume_fp other_Helts s f (s_val_ite (s_val_eq (s_val_ref_c (s_ref_c_symb s)) (s_val_ref_c (s_ref_c_symb s'))) σ' σPart) σ
+                 assume_fp other_Helts s f (s_val_ite (s_val_eq (s_val_ref_c (s_ref_c_symb s)) (s_val_ref_c (s_ref_c_symb s'))) (s_val_eq (s_val_ref_c Z) σ') σPart) σ Z
     end
-  | _ :: other_Helts => assume_fp other_Helts s f σPart σ
+  | _ :: other_Helts => assume_fp other_Helts s f σPart σ Z
   end.
 
 Definition assume (H : heap) (Y : s_ref_c) (f : string) (σ : s_val) (Z : s_ref_c) : Prop := 
   match Y with
   | s_ref_c_symb s => if MapRefC.mem Y H then
-    Z = s_ref_c_symb (s_symb_fld s f) /\ assume_fp (MapRefC.elements H) s f (s_val_ref_c Z) σ
+    Z = s_ref_c_symb (s_symb_fld s f) /\ assume_fp (MapRefC.elements H) s f (s_val_prim_c (s_prim_c_bool s_bool_true)) σ Z
     else False
   | _ => False
   end.
 
-Let Fixpoint assume_c_fp (Helts : list (s_ref_c * object)) (s : s_symb) (f : string) (σPart : s_val) : option s_val :=
+Let Fixpoint assume_c_fp (Helts : list (s_ref_c * object)) (s : s_symb) (f : string) (σPart : s_val) (Z : s_ref_c) : option s_val :=
   match Helts with
   | [] => Some σPart
-  | (s_ref_c_symb s', o') :: other_Helts => if s_symb_eqb s s' then assume_c_fp other_Helts s f σPart
+  | (s_ref_c_symb s', o') :: other_Helts => if s_symb_eqb s s' then assume_c_fp other_Helts s f σPart Z
     else match get o' f with
-    | None => assume_c_fp other_Helts s f σPart 
+    | None => assume_c_fp other_Helts s f σPart Z
     | Some σ' => if s_val_eqb σ' s_val_unassumed then
-                 assume_c_fp other_Helts s f σPart
+                 assume_c_fp other_Helts s f σPart Z
                  else
-                 assume_c_fp other_Helts s f (s_val_ite (s_val_eq (s_val_ref_c (s_ref_c_symb s)) (s_val_ref_c (s_ref_c_symb s'))) σ' σPart)
+                 assume_c_fp other_Helts s f (s_val_ite (s_val_eq (s_val_ref_c (s_ref_c_symb s)) (s_val_ref_c (s_ref_c_symb s'))) (s_val_eq (s_val_ref_c Z) σ') σPart) Z
     end
-  | _ :: other_Helts => assume_c_fp other_Helts s f σPart
+  | _ :: other_Helts => assume_c_fp other_Helts s f σPart Z
   end.
 
 Definition assume_c (H : heap) (Y : s_ref_c) (f : string) : option (s_val * s_ref_c) := 
   match Y with
   | s_ref_c_symb s => if MapRefC.mem Y H then
     let Z := s_ref_c_symb (s_symb_fld s f) in
-    option_map (fun σ => (σ, Z)) (assume_c_fp (MapRefC.elements H) s f (s_val_ref_c Z))
+    option_map (fun σ => (σ, Z)) (assume_c_fp (MapRefC.elements H) s f (s_val_prim_c (s_prim_c_bool s_bool_true)) Z)
     else None
   | _ => None
   end.

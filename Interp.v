@@ -94,7 +94,7 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
       let c := class_name C in
       let o := new_obj_symb_c P c in
       let H' := add_obj_symb H s o in
-      let cl1 := clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) in
+      let cl1 := clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) in (*TODO redundant? *)
       let cl2 := clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c)) in
       let Σ' := Σ ++ [cl1 ; cl2] in
       Some (H', Σ')
@@ -114,10 +114,11 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
         end
       | Some s_val_unassumed => match assume_c H Y f with
         | Some (σ, s_ref_c_symb s') =>
-          let o' := upd_obj o f σ in
+          let o' := upd_obj o f (s_val_ref_c (s_ref_c_symb s')) in
           let H' := repl_obj H Y o' in
-          let cl := clause_pos (s_val_field s f s') in
-          let Σ' := Σ ++ [cl] in
+          let cl1 := clause_pos (s_val_field s f s') in
+          let cl2 := clause_pos σ in
+          let Σ' := Σ ++ [cl1 ; cl2] in
           Some (H', Σ')
         | _ => None
         end
@@ -133,7 +134,7 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
       let c := class_name C in
       let o := new_obj_symb_c P c in
       let H' := add_obj_symb H s o in
-      let cl1 := clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) in
+      let cl1 := clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) in (*TODO redundant? *)
       let cl2 := clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c)) in
       let Σ' := Σ ++ [cl1 ; cl2] in
       Some (H', Σ')
@@ -356,7 +357,9 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
       match mdecl P c' m with
       | Some (s_dc_m_l t1 m (s_dc_v_l t2 xM) eM) =>
         let O := overriders P m c' in
-        let Σ' := Σ ++ [clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c'))] ++ List.map (fun c => clause_neg (s_val_subtype (s_val_ref_c Y) (s_ty_class c))) O in
+        let cl1 := clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) in (*TODO redundant? *)
+        let cl2 := clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) in
+        let Σ' := Σ ++ [cl1 ; cl2] ++ List.map (fun c => clause_neg (s_val_subtype (s_val_ref_c Y) (s_ty_class c))) O in
         let e' := repl_var (repl_var eM "this" (s_expr_val (s_val_ref_c Y))) xM (s_expr_val σ) in
         [(H, Σ', e')]
       | _ => []

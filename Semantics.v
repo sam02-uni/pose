@@ -46,17 +46,18 @@ Inductive rstep : config -> config -> Prop :=
   cl = clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) ->
   S' = S ++ [cl] ->
   (P, H, S, e) ~~> (P, H', S', e)
-| RStepGetfield3 : forall P H S S' e f Y Z s s' o o' σ cl H',
+| RStepGetfield3 : forall P H S S' e f Y Z s s' o o' σ cl1 cl2 H',
   e = s_expr_getfield (s_expr_val (s_val_ref_c Y)) f ->
   Y = s_ref_c_symb s ->
   has_obj H Y o ->
   get o f = Some s_val_unassumed ->
   assume H Y f σ Z ->
   Z = s_ref_c_symb s' ->
-  o' = upd_obj o f σ ->
+  o' = upd_obj o f (s_val_ref_c Z) ->
   H' = repl_obj H Y o' ->
-  cl = clause_pos (s_val_field s f s') ->
-  S' = S ++ [cl] ->
+  cl1 = clause_pos (s_val_field s f s') ->
+  cl2 = clause_pos σ ->
+  S' = S ++ [cl1 ; cl2] ->
   (P, H, S, e) ~~> (P, H', S', e)
 | RStepPutfield1 : forall P H S e f Y σ s c C o cl1 cl2 H' S',
   e = s_expr_putfield (s_expr_val (s_val_ref_c Y)) f (s_expr_val σ) ->
@@ -66,7 +67,7 @@ Inductive rstep : config -> config -> Prop :=
   c = class_name C ->
   new_obj_symb P c o ->
   H' = add_obj_symb H s o ->
-  cl1 = clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) ->
+  cl1 = clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) -> (* TODO redundant? *)
   cl2 = clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c)) ->
   S' = S ++ [cl1 ; cl2] ->
   (P, H, S, e) ~~> (P, H', S', e)
@@ -302,12 +303,14 @@ Inductive cstep : config -> config -> Prop :=
   mdecl P c' m = Some (s_dc_m_l t1 m (s_dc_v_l t2 xM) eM) ->
   e' = repl_var (repl_var eM "this" (s_expr_val (s_val_ref_c l))) xM (s_expr_val σ) ->
   (P, H, S, e) --> (P, H, S, e')
-| CStepInvoke2 : forall P H S e e' Y s m σ c' t1 t2 xM eM O S',
+| CStepInvoke2 : forall P H S e e' Y s m σ c' t1 t2 xM eM O cl1 cl2 S',
   e = s_expr_invoke (s_expr_val (s_val_ref_c Y)) m (s_expr_val σ) ->
   Y = s_ref_c_symb s ->
   mdecl P c' m = Some (s_dc_m_l t1 m (s_dc_v_l t2 xM) eM) ->
   forall c, (In c O <-> overrides P m c c') ->
-  S' = S ++ [clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c'))] ++ map (fun c => clause_neg (s_val_subtype (s_val_ref_c Y) (s_ty_class c))) O ->
+  cl1 = clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) -> (* TODO redundant? *)
+  cl2 = clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) ->
+  S' = S ++ [cl1 ; cl2] ++ map (fun c => clause_neg (s_val_subtype (s_val_ref_c Y) (s_ty_class c))) O ->
   e' = repl_var (repl_var eM "this" (s_expr_val (s_val_ref_c Y))) xM (s_expr_val σ) ->
   (P, H, S, e) --> (P, H, S', e')
 | CStepInvoke3 : forall P H S σ m e e1' σ1 σ2 σ' S1' S',
