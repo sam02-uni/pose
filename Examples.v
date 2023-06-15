@@ -456,4 +456,111 @@ Compute step_to_str (step_at P13 16).
 Compute step_to_str (step_at P13 17).
 Compute step_to_str (step_at P13 18).
 
+(* Figure 1c from the paper *)
+
+Compute parse "class Object { } class Void extends Object { } class LoopFrame extends Object { Node n; int i; } class Node extends Object { int max; Node next; bool hasNullWithin(Void foo1) := let f := new LoopFrame in let foo2 := (f.n := (this.next)) in let foo3 := (f.i := 1) in let fPost := (this.doLoop[f]) in ((fPost.n) = null); LoopFrame doLoop(LoopFrame f) := if ((f.n) = null) then f else if ((this.max) < (f.i)) then f else let foo4 := (f.n := ((f.n).next)) in let foo5 := (f.i := ((f.i) + 1)) in (this.doLoop[f]); } let y := Y0 in let foo6 := (y.max := 4) in (y.hasNullWithin[new Void])".
+
+Definition e14 : s_expr :=
+  s_expr_let "y" (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0))))
+    (s_expr_let "foo6" (s_expr_putfield (s_expr_var "y") "max" (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l 4)))))
+       (s_expr_invoke (s_expr_var "y") "hasNullWithin" (s_expr_new "Void"))).
+
+Definition C14_1 : s_dc_c := s_dc_c_l "LoopFrame" "Object" [s_dc_v_l (s_ty_class "Node") "n"; s_dc_v_l s_ty_int "i"] [].
+
+Definition C14_2 : s_dc_c :=
+  s_dc_c_l "Node" "Object" [s_dc_v_l s_ty_int "max"; s_dc_v_l (s_ty_class "Node") "next"]
+    [s_dc_m_l s_ty_bool "hasNullWithin" (s_dc_v_l (s_ty_class "Void") "foo1")
+       (s_expr_let "f" (s_expr_new "LoopFrame")
+          (s_expr_let "foo2" (s_expr_putfield (s_expr_var "f") "n" (s_expr_getfield (s_expr_var "this") "next"))
+             (s_expr_let "foo3" (s_expr_putfield (s_expr_var "f") "i" (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l 1)))))
+                (s_expr_let "fPost" (s_expr_invoke (s_expr_var "this") "doLoop" (s_expr_var "f"))
+                   (s_expr_eq (s_expr_getfield (s_expr_var "fPost") "n") (s_expr_val (s_val_ref_c s_ref_c_null)))))));
+     s_dc_m_l (s_ty_class "LoopFrame") "doLoop" (s_dc_v_l (s_ty_class "LoopFrame") "f")
+       (s_expr_if (s_expr_eq (s_expr_getfield (s_expr_var "f") "n") (s_expr_val (s_val_ref_c s_ref_c_null))) (s_expr_var "f")
+          (s_expr_if (s_expr_lt (s_expr_getfield (s_expr_var "this") "max") (s_expr_getfield (s_expr_var "f") "i")) (s_expr_var "f")
+             (s_expr_let "foo4" (s_expr_putfield (s_expr_var "f") "n" (s_expr_getfield (s_expr_getfield (s_expr_var "f") "n") "next"))
+                (s_expr_let "foo5"
+                   (s_expr_putfield (s_expr_var "f") "i" (s_expr_add (s_expr_getfield (s_expr_var "f") "i") (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l 1))))))
+                   (s_expr_invoke (s_expr_var "this") "doLoop" (s_expr_var "f"))))))].
+
+Definition P14 : s_prg := s_prg_l [CObject ; CVoid ; C14_1 ; C14_2] e14.
+
+Compute prg_to_str P14.
+
+Compute step_to_str (step_at P14 0).
+Compute step_to_str (step_at P14 1).
+Compute step_to_str (step_at P14 2).
+Compute step_to_str (step_at P14 3).
+Compute step_to_str (step_at P14 4).
+Compute step_to_str (step_at P14 5).
+Compute step_to_str (step_at P14 6).
+Compute step_to_str (step_at P14 7).
+Compute step_to_str (step_at P14 8).
+Compute step_to_str (step_at P14 9).
+Compute step_to_str (step_at P14 10).
+Compute step_to_str (step_at P14 11).
+Compute step_to_str (step_at P14 12).
+Compute step_to_str (step_at P14 13).
+Compute step_to_str (step_at P14 14).
+Compute step_to_str (step_at P14 15).
+Compute step_to_str (step_at P14 16).
+Compute step_to_str (step_at P14 17).
+Compute step_to_str (step_at P14 18).
+Compute step_to_str (step_at P14 19).
+Compute step_to_str (step_at P14 20).
+Compute step_to_str (step_at P14 21).
+Compute step_to_str (step_at P14 22).
+Compute step_to_str (step_at P14 23).
+Compute step_to_str (step_at P14 24).
+Compute step_to_str (step_at P14 25).
+Compute step_to_str (step_at P14 26).
+Compute step_to_str (step_at P14 27).
+Compute step_to_str (step_at P14 28).
+Compute step_to_str (step_at P14 29).
+Compute step_to_str (step_at P14 30).
+
+(* Check for correctness... *)
+Compute parse "class Object { } class N extends Object { N n; } let a := Y0 in let b := (a.n) in let foo := (a.n := null) in let c := (b.n) in c".
+
+Definition P15 : s_prg :=
+  s_prg_l [s_dc_c_l "Object" "" [] []; s_dc_c_l "N" "Object" [s_dc_v_l (s_ty_class "N") "n"] []]
+    (s_expr_let "a" (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0))))
+       (s_expr_let "b" (s_expr_getfield (s_expr_var "a") "n")
+          (s_expr_let "foo" (s_expr_putfield (s_expr_var "a") "n" (s_expr_val (s_val_ref_c s_ref_c_null)))
+             (s_expr_let "c" (s_expr_getfield (s_expr_var "b") "n") (s_expr_var "c"))))).
+
+Compute prg_to_str P15.
+
+Compute step_to_str (step_at P15 0).
+Compute step_to_str (step_at P15 1).
+Compute step_to_str (step_at P15 2).
+Compute step_to_str (step_at P15 3).
+Compute step_to_str (step_at P15 4).
+Compute step_to_str (step_at P15 5).
+Compute step_to_str (step_at P15 6).
+Compute step_to_str (step_at P15 7).
+Compute step_to_str (step_at P15 8).
+Compute step_to_str (step_at P15 9).
+Compute step_to_str (step_at P15 10).
+
+(* Check for correctness... *)
+Compute parse "class Object { } class N extends Object { N n; } let a := Y0 in let b := Y1 in let foo := (a.n := null) in let c := (b.n) in c".
+
+Definition P16 : s_prg :=
+  s_prg_l [s_dc_c_l "Object" "" [] []; s_dc_c_l "N" "Object" [s_dc_v_l (s_ty_class "N") "n"] []]
+    (s_expr_let "a" (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0))))
+       (s_expr_let "b" (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 1))))
+          (s_expr_let "foo" (s_expr_putfield (s_expr_var "a") "n" (s_expr_val (s_val_ref_c s_ref_c_null)))
+             (s_expr_let "c" (s_expr_getfield (s_expr_var "b") "n") (s_expr_var "c"))))).
+
+Compute prg_to_str P16.
+
+Compute step_to_str (step_at P16 0).
+Compute step_to_str (step_at P16 1).
+Compute step_to_str (step_at P16 2).
+Compute step_to_str (step_at P16 3).
+Compute step_to_str (step_at P16 4).
+Compute step_to_str (step_at P16 5).
+Compute step_to_str (step_at P16 6).
+Compute step_to_str (step_at P16 7).
 
