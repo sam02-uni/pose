@@ -415,3 +415,45 @@ Compute step_to_str (step_at P12 11).
 Compute step_to_str (step_at P12 12).
 Compute step_to_str (step_at P12 13).
 Compute step_to_str (step_at P12 14).
+
+(* Figure 1b from the paper *)
+
+Compute parse "class Object { } class Void extends Object { } class Node extends Object { int val; Node c0; Node c1; Node c2; int sum(Void foo) := let s1 := (this.val) in let s2 := (s1 + ((this.c0).val)) in let s3 := (s2 + ((this.c1).val)) in let s4 := (s3 + ((this.c2).val)) in s4; } let y := Y0 in (y.sum[new Void])".
+
+Definition e13 : s_expr := s_expr_let "y" (s_expr_val (s_val_ref_c (s_ref_c_symb (s_symb_expr 0)))) (s_expr_invoke (s_expr_var "y") "sum" (s_expr_new "Void")).
+
+Definition C13_1 : s_dc_c :=
+  s_dc_c_l "Node" "Object"
+    [s_dc_v_l s_ty_int "val"; s_dc_v_l (s_ty_class "Node") "c0"; s_dc_v_l (s_ty_class "Node") "c1"; s_dc_v_l (s_ty_class "Node") "c2"]
+    [s_dc_m_l s_ty_int "sum" (s_dc_v_l (s_ty_class "Void") "foo")
+       (s_expr_let "s1" (s_expr_getfield (s_expr_var "this") "val")
+          (s_expr_let "s2" (s_expr_add (s_expr_var "s1") (s_expr_getfield (s_expr_getfield (s_expr_var "this") "c0") "val"))
+             (s_expr_let "s3" (s_expr_add (s_expr_var "s2") (s_expr_getfield (s_expr_getfield (s_expr_var "this") "c1") "val"))
+                (s_expr_let "s4" (s_expr_add (s_expr_var "s3") (s_expr_getfield (s_expr_getfield (s_expr_var "this") "c2") "val"))
+                   (s_expr_var "s4")))))].
+
+Definition P13 : s_prg := s_prg_l [CObject ; CVoid ; C13_1] e13.
+
+Compute prg_to_str P13.
+
+Compute step_to_str (step_at P13 0).
+Compute step_to_str (step_at P13 1).
+Compute step_to_str (step_at P13 2).
+Compute step_to_str (step_at P13 3).
+Compute step_to_str (step_at P13 4).
+Compute step_to_str (step_at P13 5).
+Compute step_to_str (step_at P13 6).
+Compute step_to_str (step_at P13 7).
+Compute step_to_str (step_at P13 8).
+Compute step_to_str (step_at P13 9).
+Compute step_to_str (step_at P13 10).
+Compute step_to_str (step_at P13 11).
+Compute step_to_str (step_at P13 12).
+Compute step_to_str (step_at P13 13).
+Compute step_to_str (step_at P13 14).
+Compute step_to_str (step_at P13 15).
+Compute step_to_str (step_at P13 16).
+Compute step_to_str (step_at P13 17).
+Compute step_to_str (step_at P13 18).
+
+
