@@ -46,18 +46,17 @@ Inductive rstep : config -> config -> Prop :=
   cl = clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) ->
   S' = S ++ [cl] ->
   (P, H, S, e) ~~> (P, H', S', e)
-| RStepGetfield3 : forall P H S S' e f Y Z s s' o o' σ cl1 cl2 H',
+| RStepGetfield3 : forall P H S S' e f Y Z s s' o o' σ cl H',
   e = s_expr_getfield (s_expr_val (s_val_ref_c Y)) f ->
   Y = s_ref_c_symb s ->
   has_obj H Y o ->
   get o f = Some s_val_unassumed ->
   assume H Y f σ Z ->
   Z = s_ref_c_symb s' ->
-  o' = upd_obj o f (s_val_ref_c Z) ->
+  o' = upd_obj o f σ ->
   H' = repl_obj H Y o' ->
-  cl1 = clause_pos (s_val_field s f s') ->
-  cl2 = clause_pos σ ->
-  S' = S ++ [cl1 ; cl2] ->
+  cl = clause_pos (s_val_field s f s') ->
+  S' = S ++ [cl] ->
   (P, H, S, e) ~~> (P, H', S', e)
 | RStepPutfield1 : forall P H S e f Y σ s c C o cl1 cl2 H' S',
   e = s_expr_putfield (s_expr_val (s_val_ref_c Y)) f (s_expr_val σ) ->
@@ -102,6 +101,12 @@ Inductive rstep : config -> config -> Prop :=
 | RStepCtxAdd2 : forall P H H' S S' e e' σ,
   (P, H, S, e) ~~> (P, H', S', e') ->  
   (P, H, S, s_expr_add (s_expr_val σ) e) ~~> (P, H', S', s_expr_add (s_expr_val σ) e')
+| RStepCtxLt1 : forall P H H' S S' e e' e1,
+  (P, H, S, e) ~~> (P, H', S', e') ->
+  (P, H, S, s_expr_lt e e1) ~~> (P, H', S', s_expr_lt e' e1)
+| RStepCtxLt2 : forall P H H' S S' e e' σ,
+  (P, H, S, e) ~~> (P, H', S', e') ->
+  (P, H, S, s_expr_lt (s_expr_val σ) e) ~~> (P, H', S', s_expr_lt (s_expr_val σ) e')
 | RStepCtxEq1 : forall P H H' S S' e e' e1,
   (P, H, S, e) ~~> (P, H', S', e') ->  
   (P, H, S, s_expr_eq e e1) ~~> (P, H', S', s_expr_eq e' e1)
@@ -206,6 +211,15 @@ Inductive cstep : config -> config -> Prop :=
   e = s_expr_add (s_expr_val σ1) (s_expr_val σ2) ->
   (σ1 <> s_val_prim_c (s_prim_c_int (s_int_l n)) \/ σ2 <> s_val_prim_c (s_prim_c_int (s_int_l n))) ->
   e' = s_expr_val (s_val_add σ1 σ2) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepLt1 : forall P H S e n1 n2 e',
+  e = s_expr_lt (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n1)))) (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n2)))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool (if Nat.ltb n1 n2 then s_bool_true else s_bool_false))) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepLt2 : forall P H S e e' n σ1 σ2,
+  e = s_expr_lt (s_expr_val σ1) (s_expr_val σ2) ->
+  (σ1 <> s_val_prim_c (s_prim_c_int (s_int_l n)) \/ σ2 <> s_val_prim_c (s_prim_c_int (s_int_l n))) ->
+  e' = s_expr_val (s_val_lt σ1 σ2) ->
   (P, H, S, e) --> (P, H, S, e')
 | CStepEq1 : forall P H S e n1 n2 e',
   e = s_expr_eq (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n1)))) (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n2)))) ->
@@ -341,6 +355,12 @@ Inductive cstep : config -> config -> Prop :=
 | CStepCtxAdd2 : forall P H H' S S' e e' σ,
   (P, H, S, e) --> (P, H', S', e') ->  
   (P, H, S, s_expr_add (s_expr_val σ) e) --> (P, H', S', s_expr_add (s_expr_val σ) e')
+| CStepCtxLt1 : forall P H H' S S' e e' e1,
+  (P, H, S, e) --> (P, H', S', e') ->
+  (P, H, S, s_expr_lt e e1) --> (P, H', S', s_expr_lt e' e1)
+| CStepCtxLt2 : forall P H H' S S' e e' σ,
+    (P, H, S, e) --> (P, H', S', e') ->
+  (P, H, S, s_expr_lt (s_expr_val σ) e) --> (P, H', S', s_expr_lt (s_expr_val σ) e')
 | CStepCtxEq1 : forall P H H' S S' e e' e1,
   (P, H, S, e) --> (P, H', S', e') ->  
   (P, H, S, s_expr_eq e e1) --> (P, H', S', s_expr_eq e' e1)

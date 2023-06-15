@@ -18,7 +18,7 @@ Set Asymmetric Patterns.
 
 Definition ty_to_str (t : s_ty) : string :=
   match t with
-  | s_ty_bool => "boolean"
+  | s_ty_bool => "bool"
   | s_ty_int => "int"
   | s_ty_class c => c
   end.
@@ -90,6 +90,7 @@ Fixpoint val_to_str (σ : s_val) : string :=
   | s_val_prim_c p => prim_c_to_str p
   | s_val_ref_c u => ref_c_to_str u
   | s_val_add σ1 σ2 => "(" ++ val_to_str σ1 ++ " + " ++ val_to_str σ2 ++ ")"
+  | s_val_lt σ1 σ2 => "(" ++ val_to_str σ1 ++ " < " ++ val_to_str σ2 ++ ")"
   | s_val_eq σ1 σ2 => "(" ++ val_to_str σ1 ++ " = " ++ val_to_str σ2 ++ ")"
   | s_val_subtype σ t => "(" ++ val_to_str σ ++ " <: " ++ ty_to_str t ++ ")"
   | s_val_field s1 fname s2 => "(Y" ++ symb_to_str s1 ++ "." ++  fname ++ " = Y" ++ symb_to_str s2 ++ ")"
@@ -105,6 +106,7 @@ Fixpoint expr_to_str (e : s_expr) : string :=
   | s_expr_putfield e1 fname e2 => "(" ++ expr_to_str e1 ++ "." ++ fname ++ " := " ++ expr_to_str e2 ++ ")"
   | s_expr_let x e1 e2 => "let " ++ x ++ " := " ++ expr_to_str e1 ++ " in " ++ expr_to_str e2
   | s_expr_add e1 e2 => "(" ++ expr_to_str e1 ++ " + " ++ expr_to_str e2 ++ ")"
+  | s_expr_lt e1 e2 => "(" ++ expr_to_str e1 ++ " < " ++ expr_to_str e2 ++ ")"
   | s_expr_eq e1 e2 => "(" ++ expr_to_str e1 ++ " = " ++ expr_to_str e2 ++ ")"
   | s_expr_instanceof e1 c =>  "(" ++ expr_to_str e1 ++ " instanceof " ++ c ++ ")"
   | s_expr_if e1 e2 e3 => "if " ++ expr_to_str e1 ++ " then " ++ expr_to_str e2 ++ " else " ++ expr_to_str e3

@@ -39,6 +39,7 @@ Let Fixpoint height_s_val (σ : s_val) : nat :=
   | s_val_prim_c _
   | s_val_ref_c _ => 0
   | s_val_add σ1 σ2 => S (Nat.max (height_s_val σ1) (height_s_val σ2))
+  | s_val_lt σ1 σ2 => S (Nat.max (height_s_val σ1) (height_s_val σ2))
   | s_val_eq σ1 σ2 => S (Nat.max (height_s_val σ1) (height_s_val σ2))
   | s_val_subtype σ1 t => S (height_s_val σ1)
   | s_val_field _ _ _ => 0
@@ -54,6 +55,7 @@ Let Fixpoint height_s_expr (e : s_expr) : nat :=
   | s_expr_putfield e1 _ e2 => S (height_s_expr e1) + height_s_expr e2
   | s_expr_let _ e1 _ => S (height_s_expr e1)
   | s_expr_add e1 e2 => S (height_s_expr e1) + height_s_expr e2
+  | s_expr_lt e1 e2 => S (height_s_expr e1) + height_s_expr e2
   | s_expr_eq e1 e2 => S (height_s_expr e1) + height_s_expr e2
   | s_expr_instanceof e1 c => S (height_s_expr e1)
   | s_expr_if e1 _ _ => S (height_s_expr e1)
@@ -114,11 +116,10 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
         end
       | Some s_val_unassumed => match assume_c H Y f with
         | Some (σ, s_ref_c_symb s') =>
-          let o' := upd_obj o f (s_val_ref_c (s_ref_c_symb s')) in
+          let o' := upd_obj o f σ in
           let H' := repl_obj H Y o' in
-          let cl1 := clause_pos (s_val_field s f s') in
-          let cl2 := clause_pos σ in
-          let Σ' := Σ ++ [cl1 ; cl2] in
+          let cl := clause_pos (s_val_field s f s') in
+          let Σ' := Σ ++ [cl] in
           Some (H', Σ')
         | _ => None
         end
@@ -162,6 +163,8 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
   | s_expr_let x e1 e2 => rstep_c P H Σ e1 
   | s_expr_add (s_expr_val _) e1 => rstep_c P H Σ e1
   | s_expr_add e1 e2 => rstep_c P H Σ e1 
+  | s_expr_lt (s_expr_val _) e1 => rstep_c P H Σ e1
+  | s_expr_lt e1 e2 => rstep_c P H Σ e1 
   | s_expr_eq (s_expr_val _) e1 => rstep_c P H Σ e1 
   | s_expr_eq e1 e2 => rstep_c P H Σ e1
   | s_expr_instanceof e1 c => rstep_c P H Σ e1
@@ -293,6 +296,12 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
   | s_expr_add (s_expr_val σ1) (s_expr_val σ2) =>
     let e' := s_expr_val (s_val_add σ1 σ2) in
     [(H, Σ, e')]
+  | s_expr_lt (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n1)))) (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n2)))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool (if Nat.ltb n1 n2 then s_bool_true else s_bool_false))) in
+    [(H, Σ, e')]
+  | s_expr_lt (s_expr_val σ1) (s_expr_val σ2) =>
+    let e' := s_expr_val (s_val_lt σ1 σ2) in
+    [(H, Σ, e')]
   | s_expr_eq (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n1)))) (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n2)))) =>
     let e' := s_expr_val (s_val_prim_c (s_prim_c_bool (if Nat.eqb n1 n2 then s_bool_true else s_bool_false))) in
     [(H, Σ, e')]
@@ -402,6 +411,14 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
   | s_expr_add e1 e2 => List.map (fun x : heap * path_condition * s_expr =>
     match x with
     | (H', Σ', e1') => (H', Σ', s_expr_add e1' e2)
+    end) (cstep_c_fp P H Σ e1)
+  | s_expr_lt (s_expr_val σ) e1 => List.map (fun x : heap * path_condition * s_expr =>
+    match x with
+    | (H', Σ', e1') => (H', Σ', s_expr_lt (s_expr_val σ) e1')
+    end) (cstep_c_fp P H Σ e1) 
+  | s_expr_lt e1 e2 => List.map (fun x : heap * path_condition * s_expr =>
+    match x with
+    | (H', Σ', e1') => (H', Σ', s_expr_lt e1' e2)
     end) (cstep_c_fp P H Σ e1)
   | s_expr_eq (s_expr_val σ) e1 => List.map (fun x : heap * path_condition * s_expr =>
     match x with
