@@ -236,9 +236,12 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
     let e2 := s_expr_getfield (s_expr_val σ2) f in
     match rstep_c_star P H Σ e1 with
     | Some (H1tmp, Σ1tmp) => match cstep_c_fp P H1tmp Σ1tmp e1 with
-      | [(H1', Σ1', s_expr_val σ1')] => match cstep_c_fp P H1' Σ1' e2 with
-          | [(H', Σ', s_expr_val σ2')] => 
-            [(H', Σ', s_expr_val (s_val_ite σ σ1' σ2'))]
+      | [(H1', Σ1', s_expr_val σ1')] => match rstep_c_star P H1' Σ1' e2 with
+          | Some (Htmp', Σtmp') => match cstep_c_fp P Htmp' Σtmp' e2 with
+            | [(H', Σ', s_expr_val σ2')] =>
+              [(H', Σ', s_expr_val (s_val_ite σ σ1' σ2'))]
+            | _ => []
+            end
           | _ => []
           end
       | _ => []
