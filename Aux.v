@@ -7,7 +7,7 @@ From Coq Require Import FSets.FMapWeakList.
 From Coq Require Import Structures.DecidableType.
 From Coq Require Import Structures.DecidableTypeEx.
 From Hammer Require Import Tactics.
-From BOSE Require Import Syntax.
+From POSE Require Import Syntax.
 
 Open Scope string_scope.
 Open Scope list_scope.

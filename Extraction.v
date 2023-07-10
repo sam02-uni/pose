@@ -2,9 +2,9 @@ From Coq Require Extraction.
 From Coq Require Import extraction.ExtrHaskellBasic.
 From Coq Require Import extraction.ExtrHaskellString.
 From Coq Require Import extraction.ExtrHaskellNatInteger.
-From BOSE Require Import Syntax.
-From BOSE Require Import Interp.
+From POSE Require Import Syntax.
+From POSE Require Import Interp.
 
 Extraction Language Haskell.
 
-Extraction "./bose.hs" CObject compute step_at.
+Extraction "./pose.hs" CObject compute step_at.

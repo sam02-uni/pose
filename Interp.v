@@ -6,9 +6,9 @@ From Coq Require Import Lists.List. Import ListNotations.
 From Coq Require Import Lists.Streams.
 From Coq Require Import Program.Wf.
 From Hammer Require Import Tactics.
-From BOSE Require Import Syntax.
-From BOSE Require Import SemanticsTypes.
-From BOSE Require Import SemanticsAux.
+From POSE Require Import Syntax.
+From POSE Require Import SemanticsTypes.
+From POSE Require Import SemanticsAux.
 
 Extraction Language Haskell.
 

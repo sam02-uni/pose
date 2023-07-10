@@ -6,7 +6,7 @@ KNOWNTARGETS := CoqMakefile
 # on them always get rebuilt
 KNOWNFILES   := Makefile _CoqProject
 
-ALLVFILES    := Aux.v Syntax.v SemanticsTypes.v SemanticsAux.v Semantics.v Interp.v Prettyprint.v Parse.v Extraction.v
+ALLVFILES    := Aux.v Syntax.v SemanticsTypes.v SemanticsAux.v Semantics.v Interp.v Prettyprint.v Parse.v Smt.v Extraction.v
 
 .DEFAULT_GOAL := invoke-coqmakefile
 

@@ -6,8 +6,8 @@ From Coq Require Import Lists.List. Import ListNotations.
 From Coq Require Import Relations.Relation_Definitions.
 From Coq Require Import Relations.Relation_Operators.
 From Coq Require Import Relations.Operators_Properties.
-From BOSE Require Import Aux.
-From BOSE Require Import Syntax.
+From POSE Require Import Aux.
+From POSE Require Import Syntax.
 
 Open Scope string_scope.
 Open Scope list_scope.

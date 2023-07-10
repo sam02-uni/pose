@@ -1,2 +1,2 @@
-# bose
-Branch-optimal symbolic execution
+# pose
+Path-optimal symbolic execution

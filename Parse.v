@@ -5,7 +5,7 @@ From Coq Require Import Bool.Bool.
 From Coq Require Import Arith.Arith.
 From Coq Require Import Arith.EqNat.
 From Coq Require Import Lists.List. Import ListNotations.
-From BOSE Require Import Syntax.
+From POSE Require Import Syntax.
 
 Open Scope string_scope.
 Open Scope list_scope.
