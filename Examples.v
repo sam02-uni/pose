@@ -9,6 +9,7 @@ From POSE Require Import SemanticsAux.
 From POSE Require Import Interp.
 From POSE Require Import Parse.
 From POSE Require Import Prettyprint.
+From POSE Require Import Smt.
 
 Open Scope string_scope.
 Open Scope list_scope.
@@ -598,8 +599,8 @@ Compute step_to_str (step_at P15 5).
 Compute step_to_str (step_at P15 6).
 Compute step_to_str (step_at P15 7).
 Compute step_to_str (step_at P15 8).
-Compute step_to_str (step_at P15 9).
-Compute step_to_str (step_at P15 10).
+
+Compute (step_at P15 7).
 
 (* Check for correctness... *)
 Compute parse "class Object { } class N extends Object { N n; } let a := Y0 in let b := Y1 in let foo := (a.n := null) in let c := (b.n) in c".
@@ -621,4 +622,6 @@ Compute step_to_str (step_at P16 4).
 Compute step_to_str (step_at P16 5).
 Compute step_to_str (step_at P16 6).
 Compute step_to_str (step_at P16 7).
+
+Compute step_to_smt (step_at P15 7).
 

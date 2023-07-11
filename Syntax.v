@@ -154,14 +154,19 @@ Definition class_name (C : s_dc_c) : string :=
   | s_dc_c_l c _ _ _ => c 
   end.
 
-Definition methods (C : s_dc_c) : list s_dc_m :=
+Definition superclass_name (C : s_dc_c) : string :=
   match C with
-  | s_dc_c_l _ _ _ Ds => Ds 
+  | s_dc_c_l _ s _ _ => s 
   end.
 
 Definition fields (C : s_dc_c) : list s_dc_v :=
   match C with
   | s_dc_c_l _ _ Fs _ => Fs 
+  end.
+
+Definition methods (C : s_dc_c) : list s_dc_m :=
+  match C with
+  | s_dc_c_l _ _ _ Ds => Ds 
   end.
 
 Definition method_name (D : s_dc_m) : string :=
