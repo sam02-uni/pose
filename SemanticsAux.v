@@ -118,50 +118,51 @@ End UpdateDefs.
 Section MergeDefs.
   
 Definition merge (H1' H2' H' H : heap) (f : string) (σ : s_val) : Prop :=
-  (forall u : s_ref_c, (MapRefC.In u H -> (MapRefC.In u H1' /\ MapRefC.In u H2')) /\
-  ((MapRefC.In u H1' \/ MapRefC.In u H2') <-> MapRefC.In u H') /\
-  (obj_at H1' u = obj_at H2' u -> obj_at H' u = obj_at H1' u) /\
-  (forall o1' o2', has_obj H1' u o1' -> has_obj H2' u o2' -> o1' <> o2' -> exists o σ1 σ2, (obj_at H u = Some o /\ o1' = upd_obj o f σ1 /\ o2' = upd_obj o f σ2 /\ has_obj H' u (upd_obj o f (s_val_ite σ σ1 σ2)))) /\
-  (forall o1', has_obj H1' u o1' -> obj_at H2' u = None -> exists o s σ1 Z, (obj_at H u = Some o /\ u = s_ref_c_symb s /\ o1' = upd_obj o f σ1 /\ has_obj H' u (upd_obj o f (s_val_ite σ σ1 Z)) /\ Z = s_val_ref_c (s_ref_c_symb (s_symb_fld s f)))) /\
-  (forall o2', has_obj H2' u o2' -> obj_at H1' u = None -> exists o s σ2 Z, (obj_at H u = Some o /\ u = s_ref_c_symb s /\ o2' = upd_obj o f σ2 /\ has_obj H' u (upd_obj o f (s_val_ite σ Z σ2)) /\ Z = s_val_ref_c (s_ref_c_symb (s_symb_fld s f))))).
+  (forall u : s_ref_c,
+      (MapRefC.In u H -> (MapRefC.In u H1' /\ MapRefC.In u H2')) /\
+      ((MapRefC.In u H1' \/ MapRefC.In u H2') <-> MapRefC.In u H') /\
+      (obj_at H1' u = obj_at H2' u -> obj_at H' u = obj_at H1' u) /\
+      (forall o1' o2', has_obj H1' u o1' -> has_obj H2' u o2' -> o1' <> o2' -> exists σ1 σ2, (o1' = upd_obj o2' f σ1 /\ o2' = upd_obj o1' f σ2 /\ has_obj H' u (upd_obj o1' f (s_val_ite σ σ1 σ2)))) /\
+      (forall o1', has_obj H1' u o1' -> obj_at H2' u = None -> exists s σ1 Z, (get o1' f = Some σ1 /\ u = s_ref_c_symb s /\ has_obj H' u (upd_obj o1' f (s_val_ite σ σ1 Z)) /\ Z = s_val_ref_c (s_ref_c_symb (s_symb_fld s f)))) /\
+      (forall o2', has_obj H2' u o2' -> obj_at H1' u = None -> exists s σ2 Z, (get o2' f = Some σ2 /\ u = s_ref_c_symb s /\ has_obj H' u (upd_obj o2' f (s_val_ite σ Z σ2)) /\ Z = s_val_ref_c (s_ref_c_symb (s_symb_fld s f))))).
 
-Let Fixpoint merge_c_aux (H1elts : list (s_ref_c * object)) (H2 H : heap) (f : string) (σ : s_val) (direct : bool) : option heap :=
+(* direct: if true, and H2 has a same object, merge the two objects and add 
+   it to H1; if false, and H2 has a same object, don't add it to H1 *)
+Fixpoint merge_c_aux (H1elts : list (s_ref_c * object)) (H2 : heap) (f : string) (σ : s_val) (direct : bool) : option heap :=
   match H1elts with
   | [] => Some H0
   | (u, o1) :: other_H1elts =>
-    let other_H1 := merge_c_aux other_H1elts H2 H f σ direct in
+    let other_H1 := merge_c_aux other_H1elts H2 f σ direct in
     match obj_at H2 u with
+    (* H2 has an object at u *)
     | Some o2 => if direct && object_eqb o1 o2 then
       option_map (fun H' => repl_obj H' u o1) other_H1
       else if direct && negb (object_eqb o1 o2) then
       match get o1 f, get o2 f with
-      | Some σ1, Some σ2 =>
-        match obj_at H u with
-        | Some o => if object_eqb o1 (upd_obj o f σ1) && object_eqb o2 (upd_obj o f σ2) then
-          let o' := upd_obj o f (s_val_ite σ σ1 σ2) in
+      | Some σ1, Some σ2 => if object_eqb o1 (upd_obj o2 f σ1) then
+          let o' := upd_obj o1 f (s_val_ite σ σ1 σ2) in
           option_map (fun H' => repl_obj H' u o') other_H1
-          else None
-        | _ => None
-        end
-      | _, _ => None (* if o1 <> o2 they must differ by f *)
+        else None (* unexpected: differring objects o1 and o2, but they do not differ by f (one object is not obtained by replacing the content of field f of the other) *)
+      | _, _ => None (* unexpected: differring objects o1 and o2, but they do not differ by f (one object has the field, the other object has it not) *)
       end
       else other_H1
+    (* H2 has no object at u *)
     | None => match get o1 f with
       | Some σ1 => match u with
         | s_ref_c_symb s => 
           let Z := s_val_ref_c (s_ref_c_symb (s_symb_fld s f)) in
           let o' := if direct then upd_obj o1 f (s_val_ite σ σ1 Z) else upd_obj o1 f (s_val_ite σ Z σ1) in
           option_map (fun H' => repl_obj H' u o') other_H1
-        | _ => None (* unexpected: if no corresponding object in H2 it must be a symbolic object and u must be a symbolic reference *)
+        | _ => None (* unexpected: if u has no corresponding object in H2, then o1 must be a symbolic object and u must be a symbolic reference *)
         end
-      | _ => None (* unexpected: if no corresponding objectin H2 it must have f because the object was introduced by a refinement transition *)
+      | _ => None (* unexpected: if u has no corresponding object in H2 then o1 must have field f; this because the o1 was introduced by a refinement transition *)
       end
     end
   end.
 
-Definition merge_c (H1' H2' H : heap) (f : string) (σ : s_val) : option heap :=
-  match merge_c_aux (MapRefC.elements H1') H2' H f σ true,
-  merge_c_aux (MapRefC.elements H2') H1' H f σ false with
+Definition merge_c (H1' H2' : heap) (f : string) (σ : s_val) : option heap :=
+  match merge_c_aux (MapRefC.elements H1') H2' f σ true,
+  merge_c_aux (MapRefC.elements H2') H1' f σ false with
   | Some H1'', Some H2'' =>
     Some (MapRefC.map2 (fun x y => match x, y with
     | Some o, None => Some o
@@ -171,11 +172,11 @@ Definition merge_c (H1' H2' H : heap) (f : string) (σ : s_val) : option heap :=
   | _, _ => None
   end.
 
-Let Fixpoint merge_clauses_aux (H1elts : list (s_ref_c * object)) (H2 H : heap) (f : string) : option path_condition :=
+Let Fixpoint merge_clauses_aux (H1elts : list (s_ref_c * object)) (H2 : heap) (f : string) : option path_condition :=
   match H1elts with
   | [] => Some []
   | (u, o) :: other_H1elts =>
-    let other_H1 := merge_clauses_aux other_H1elts H2 H f in
+    let other_H1 := merge_clauses_aux other_H1elts H2 f in
     match obj_at H2 u with
     | None => match u with 
       | s_ref_c_symb s =>
@@ -187,8 +188,8 @@ Let Fixpoint merge_clauses_aux (H1elts : list (s_ref_c * object)) (H2 H : heap) 
     end
   end.
 
-Definition merge_clauses (H1' H2' H : heap) (f : string) : option path_condition :=
-  match merge_clauses_aux (MapRefC.elements H1') H2' H f, merge_clauses_aux (MapRefC.elements H2') H1' H f with
+Definition merge_clauses (H1' H2' : heap) (f : string) : option path_condition :=
+  match merge_clauses_aux (MapRefC.elements H1') H2' f, merge_clauses_aux (MapRefC.elements H2') H1' f with
   | Some Σ1, Some Σ2 => Some (Σ1 ++ Σ2)
   | _, _ => None
   end.

@@ -280,7 +280,7 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
     | Some (H1tmp, Σ1tmp), Some (H2tmp, Σ2tmp) =>
       match cstep_c_fp P H1tmp Σ1tmp e1, cstep_c_fp P H2tmp Σ2tmp e2 with
       | [(H1', Σ1', _)], [(H2', Σ2', _)] =>
-        match merge_c H1' H2' H f σ, merge_clauses H1' H2' H f with
+        match merge_c H1' H2' f σ, merge_clauses H1' H2' f with
         | Some H', Some Σetc => 
           let Σ' := Σ1' ++ Σ2' ++ Σetc in
           [(H', Σ', e')]

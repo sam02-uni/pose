@@ -196,7 +196,7 @@ Inductive cstep : config -> config -> Prop :=
   (P, H, S, s_expr_putfield (s_expr_val σ2) f e') ==> (P, H2', S2', e') ->
   e = s_expr_putfield (s_expr_val (s_val_ite σ σ1 σ2)) f e' ->
   merge H1' H2' H' H f σ ->
-  merge_clauses H1' H2' H f = Some Setc ->
+  merge_clauses H1' H2' f = Some Setc ->
   S' = S1' ++ S2' ++ Setc ->
   (P, H, S, e) --> (P, H', S', e')
 | CStepLet : forall P H S e x σ e1 e',
