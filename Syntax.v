@@ -248,6 +248,20 @@ Fixpoint s_val_eqb (σ1 σ2 : s_val) : bool :=
   | _, _ => false
   end.
 
+(* Is a type a reference? *)
+Definition is_type_reference (t : s_ty) : bool :=
+  match t with
+  | s_ty_class _ => true
+  | _ => false
+  end.
+
+Definition is_type_primitive (t : s_ty) : bool :=
+  match t with
+  | s_ty_class _ => false
+  | _ => true
+  end.
+  
+
 (* Is a value a reference? *)
 Fixpoint is_reference (σ : s_val) : bool :=
   match σ with

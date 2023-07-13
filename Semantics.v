@@ -46,11 +46,30 @@ Inductive rstep : config -> config -> Prop :=
   cl = clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) ->
   S' = S ++ [cl] ->
   (P, H, S, e) ~~> (P, H', S', e)
-| RStepGetfield3 : forall P H S S' e f Y Z s s' o o' σ cl H',
+| RStepGetfield3 : forall P H S S' e f C t Y Z s s' o o' σ cl H',
   e = s_expr_getfield (s_expr_val (s_val_ref_c Y)) f ->
   Y = s_ref_c_symb s ->
   has_obj H Y o ->
   get o f = Some s_val_unassumed ->
+  class_has_field C f ->
+  fdecl C f = Some (s_dc_v_l t f) ->
+  is_type_primitive t = true ->
+  assume_num H Y f = Some Z ->
+  Z = s_prim_c_symb s' ->
+  σ = s_val_prim_c Z ->
+  o' = upd_obj o f σ ->
+  H' = repl_obj H Y o' ->
+  cl = clause_pos (s_val_field s f s') ->
+  S' = S ++ [cl] ->
+  (P, H, S, e) ~~> (P, H', S', e)
+| RStepGetfield4 : forall P H S S' e f C t Y Z s s' o o' σ cl H',
+  e = s_expr_getfield (s_expr_val (s_val_ref_c Y)) f ->
+  Y = s_ref_c_symb s ->
+  has_obj H Y o ->
+  get o f = Some s_val_unassumed ->
+  class_has_field C f ->
+  fdecl C f = Some (s_dc_v_l t f) ->
+  is_type_reference t = true ->
   assume H Y f σ Z ->
   Z = s_ref_c_symb s' ->
   o' = upd_obj o f σ ->

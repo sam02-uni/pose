@@ -62,7 +62,13 @@ Definition assume_c (H : heap) (Y : s_ref_c) (f : string) : option (s_val * s_re
     let Z := s_ref_c_symb (s_symb_fld s f) in
     option_map (fun σ => (σ, Z)) (assume_c_fp (MapRefC.elements H) s f (s_val_ref_c Z))
     else None
-  | _ => None
+  | _ => None (* error: cannot assume over a concrete reference/object *)
+  end.
+
+Definition assume_num (H : heap) (Y : s_ref_c) (f : string) : option s_prim_c :=
+  match Y with
+  | s_ref_c_symb s => if MapRefC.mem Y H then Some (s_prim_c_symb (s_symb_fld s f)) else None
+  | _ => None (* error: cannot assume over a concrete reference/object *)
   end.
 
 End AssumeDefs.

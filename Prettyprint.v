@@ -93,7 +93,7 @@ Fixpoint val_to_str (σ : s_val) : string :=
   | s_val_lt σ1 σ2 => "(" ++ val_to_str σ1 ++ " < " ++ val_to_str σ2 ++ ")"
   | s_val_eq σ1 σ2 => "(" ++ val_to_str σ1 ++ " = " ++ val_to_str σ2 ++ ")"
   | s_val_subtype σ t => "(" ++ val_to_str σ ++ " <: " ++ ty_to_str t ++ ")"
-  | s_val_field s1 fname s2 => "(Y" ++ symb_to_str s1 ++ "." ++  fname ++ " = Y" ++ symb_to_str s2 ++ ")"
+  | s_val_field s1 fname s2 => "(Y" ++ symb_to_str s1 ++ "." ++  fname ++ " = Z" ++ symb_to_str s2 ++ ")"
   | s_val_ite σ1 σ2 σ3 => "ite(" ++ val_to_str σ1 ++ ", " ++ val_to_str σ2 ++ ", " ++ val_to_str σ3 ++ ")"
   end.
 
