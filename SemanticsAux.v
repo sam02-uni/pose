@@ -37,7 +37,11 @@ Let Fixpoint assume_fp (Helts : list (s_ref_c * object)) (s : s_symb) (f : strin
 Definition assume (H : heap) (Y : s_ref_c) (f : string) (σ : s_val) (Z : s_ref_c) : Prop := 
   match Y with
   | s_ref_c_symb s => if MapRefC.mem Y H then
-    Z = s_ref_c_symb (s_symb_fld s f) /\ assume_fp (MapRefC.elements H) s f (s_val_ref_c Z) σ
+    let s' := match s with
+              | s_symb_expr n => s_symb_fld n [f]
+              | s_symb_fld n l => s_symb_fld n (l ++ [f])
+              end in                              
+    Z = s_ref_c_symb s' /\ assume_fp (MapRefC.elements H) s f (s_val_ref_c Z) σ
     else False
   | _ => False
   end.
@@ -59,7 +63,11 @@ Let Fixpoint assume_c_fp (Helts : list (s_ref_c * object)) (s : s_symb) (f : str
 Definition assume_c (H : heap) (Y : s_ref_c) (f : string) : option (s_val * s_ref_c) := 
   match Y with
   | s_ref_c_symb s => if MapRefC.mem Y H then
-    let Z := s_ref_c_symb (s_symb_fld s f) in
+    let s' := match s with
+              | s_symb_expr n => s_symb_fld n [f]
+              | s_symb_fld n l => s_symb_fld n (l ++ [f])
+              end in                              
+    let Z := s_ref_c_symb s' in
     option_map (fun σ => (σ, Z)) (assume_c_fp (MapRefC.elements H) s f (s_val_ref_c Z))
     else None
   | _ => None (* error: cannot assume over a concrete reference/object *)
@@ -67,7 +75,12 @@ Definition assume_c (H : heap) (Y : s_ref_c) (f : string) : option (s_val * s_re
 
 Definition assume_num (H : heap) (Y : s_ref_c) (f : string) : option s_prim_c :=
   match Y with
-  | s_ref_c_symb s => if MapRefC.mem Y H then Some (s_prim_c_symb (s_symb_fld s f)) else None
+  | s_ref_c_symb s => if MapRefC.mem Y H then
+    let s' := match s with
+              | s_symb_expr n => s_symb_fld n [f]
+              | s_symb_fld n l => s_symb_fld n (l ++ [f])
+              end in                              
+              Some (s_prim_c_symb s') else None
   | _ => None (* error: cannot assume over a concrete reference/object *)
   end.
 
@@ -129,8 +142,8 @@ Definition merge (H1' H2' H' H : heap) (f : string) (σ : s_val) : Prop :=
       ((MapRefC.In u H1' \/ MapRefC.In u H2') <-> MapRefC.In u H') /\
       (obj_at H1' u = obj_at H2' u -> obj_at H' u = obj_at H1' u) /\
       (forall o1' o2', has_obj H1' u o1' -> has_obj H2' u o2' -> o1' <> o2' -> exists σ1 σ2, (o1' = upd_obj o2' f σ1 /\ o2' = upd_obj o1' f σ2 /\ has_obj H' u (upd_obj o1' f (s_val_ite σ σ1 σ2)))) /\
-      (forall o1', has_obj H1' u o1' -> obj_at H2' u = None -> exists s σ1 Z, (get o1' f = Some σ1 /\ u = s_ref_c_symb s /\ has_obj H' u (upd_obj o1' f (s_val_ite σ σ1 Z)) /\ Z = s_val_ref_c (s_ref_c_symb (s_symb_fld s f)))) /\
-      (forall o2', has_obj H2' u o2' -> obj_at H1' u = None -> exists s σ2 Z, (get o2' f = Some σ2 /\ u = s_ref_c_symb s /\ has_obj H' u (upd_obj o2' f (s_val_ite σ Z σ2)) /\ Z = s_val_ref_c (s_ref_c_symb (s_symb_fld s f))))).
+      (forall o1', has_obj H1' u o1' -> obj_at H2' u = None -> exists n l σ1 Z, (get o1' f = Some σ1 /\ ((u = s_ref_c_symb (s_symb_expr n) /\ l = []) \/ (u = s_ref_c_symb (s_symb_fld n l))) /\ has_obj H' u (upd_obj o1' f (s_val_ite σ σ1 Z)) /\ Z = s_val_ref_c (s_ref_c_symb (s_symb_fld n (l ++ [f]))))) /\
+      (forall o2', has_obj H2' u o2' -> obj_at H1' u = None -> exists n l σ2 Z, (get o2' f = Some σ2 /\ ((u = s_ref_c_symb (s_symb_expr n) /\ l = []) \/ (u = s_ref_c_symb (s_symb_fld n l))) /\ has_obj H' u (upd_obj o2' f (s_val_ite σ Z σ2)) /\ Z = s_val_ref_c (s_ref_c_symb (s_symb_fld n (l ++ [f])))))).
 
 (* direct: if true, and H2 has a same object, merge the two objects and add 
    it to H1; if false, and H2 has a same object, don't add it to H1 *)
@@ -156,7 +169,11 @@ Fixpoint merge_c_aux (H1elts : list (s_ref_c * object)) (H2 : heap) (f : string)
     | None => match get o1 f with
       | Some σ1 => match u with
         | s_ref_c_symb s => 
-          let Z := s_val_ref_c (s_ref_c_symb (s_symb_fld s f)) in
+          let s' := match s with
+                    | s_symb_expr n => s_symb_fld n [f]
+                    | s_symb_fld n l => s_symb_fld n (l ++ [f])
+                    end in                              
+          let Z := s_val_ref_c (s_ref_c_symb s') in
           let o' := if direct then upd_obj o1 f (s_val_ite σ σ1 Z) else upd_obj o1 f (s_val_ite σ Z σ1) in
           option_map (fun H' => repl_obj H' u o') other_H1
         | _ => None (* unexpected: if u has no corresponding object in H2, then o1 must be a symbolic object and u must be a symbolic reference *)
@@ -186,7 +203,10 @@ Let Fixpoint merge_clauses_aux (H1elts : list (s_ref_c * object)) (H2 : heap) (f
     match obj_at H2 u with
     | None => match u with 
       | s_ref_c_symb s =>
-        let s' := s_symb_fld s f in
+        let s' := match s with
+                   | s_symb_expr n => s_symb_fld n [f]
+                   | s_symb_fld n l => s_symb_fld n (l ++ [f])
+                   end in                              
         option_map (fun Σ => (clause_pos (s_val_field s f s')) :: Σ) other_H1
       | _ => None
       end

@@ -64,10 +64,10 @@ Definition loc_to_str (l : s_loc) : string :=
   | s_loc_l n => "L" ++ nat_to_str n
   end.
 
-Fixpoint symb_to_str (s : s_symb) : string :=
+Definition symb_to_str (s : s_symb) : string :=
   match s with
   | s_symb_expr n => nat_to_str n 
-  | s_symb_fld s fname => symb_to_str s ++ "_" ++ fname
+  | s_symb_fld n l => nat_to_str n ++ "_" ++ (String.concat "_" l)
   end.
 
 Definition prim_c_to_str (p : s_prim_c) : string :=

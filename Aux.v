@@ -23,6 +23,19 @@ Module String_as_MDT <: MiniDecidableType.
   Definition eq_dec := string_dec.
 End String_as_MDT.
 
+Module ListString_as_MDT <: MiniDecidableType.
+  Definition t := list string.
+  Theorem eq_dec : forall l1 l2 : list string, { l1 = l2 } + { l1 <> l2 }.
+  Proof.
+    intro l1. induction l1. intro l2. destruct l2. 
+    - auto.
+    - sauto.
+    - intro l2. destruct l2. 
+      * sauto. 
+      * assert ({a = s} + {a <> s}) by apply string_dec. sauto. 
+  Defined.
+End ListString_as_MDT.
+      
 Module String_as_UDT <: UsualDecidableType := Make_UDT(String_as_MDT).
 Module String_as_DT <: DecidableType := UDT_to_DT(String_as_UDT).
 
@@ -36,7 +49,7 @@ Module RefC_as_MDT <: MiniDecidableType.
     - now right.
     - destruct s2.
       + now right.
-      +  assert ({s1 = s2} + {s1 <> s2}) by apply IHs1. assert ({s = s0} + {s <> s0}) by apply string_dec. sauto.
+      +  assert ({n = n0} + {n <> n0}) by apply Nat.eq_dec. assert ({l = l0} + {l <> l0}) by apply ListString_as_MDT.eq_dec. sauto.
   Defined.
   
   Theorem eq_dec : forall x y : s_ref_c, { x = y } + { x <> y }.
@@ -55,7 +68,7 @@ Module RefC_as_MDT <: MiniDecidableType.
       + destruct s. destruct s0.
         * assert ({n = n0} + {n <> n0}) by apply Nat.eq_dec. sauto.
         * now right.
-        * assert ({s_symb_fld s s1 = s0} + {s_symb_fld s s1<> s0}) by apply eq_symb_dec. sauto.
+        * assert ({s_symb_fld n l = s0} + {s_symb_fld n l <> s0}) by apply eq_symb_dec. sauto.
   Defined.
 End RefC_as_MDT.
 

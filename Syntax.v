@@ -41,7 +41,7 @@ Inductive s_symb : Type :=
 (* Symbols introduced by refinements actions
    during execution; they signify the initial
    value of a field of an input object *)
-| s_symb_fld : s_symb -> string -> s_symb.
+| s_symb_fld : nat -> list string -> s_symb.
 
 (* Constants with primitive type *)
 Inductive s_prim_c : Type :=
@@ -198,10 +198,17 @@ Definition s_int_eqb (n1 n2 : s_int) : bool :=
   | s_int_l i1, s_int_l i2 => Nat.eqb i1 i2
   end.
 
-Fixpoint s_symb_eqb (s1 s2 : s_symb) : bool :=
+Fixpoint list_string_eqb (l1 l2 : list string) : bool :=
+  match l1, l2 with
+  | [], [] => true
+  | s1 :: l1', s2 :: l2' => andb (String.eqb s1 s2) (list_string_eqb l1' l2')
+  | _, _ => false
+  end.
+
+Definition s_symb_eqb (s1 s2 : s_symb) : bool :=
   match s1, s2 with
   | s_symb_expr n1, s_symb_expr n2 => Nat.eqb n1 n2
-  | s_symb_fld s1' f1, s_symb_fld s2' f2 => andb (s_symb_eqb s1' s2') (String.eqb f1 f2)
+  | s_symb_fld n1 l1, s_symb_fld n2 l2 => andb (Nat.eqb n1 n2) (list_string_eqb l1 l2)
   | _, _ => false
   end.
 
