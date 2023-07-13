@@ -90,7 +90,7 @@ Fixpoint value_to_smt (σ : s_val) : string :=
   | _ => ""
   end.
 
-Definition clause_to_smt (σ : s_val) (positive : bool) : string :=
+Definition clause_to_smt (P : s_prg) (σ : s_val) (positive : bool) : string :=
   match σ with
   | s_val_prim_c p => prim_c_to_str p
   | s_val_ref_c u => ref_c_to_smt u
@@ -100,18 +100,31 @@ Definition clause_to_smt (σ : s_val) (positive : bool) : string :=
     | s_ty_class c => "(assert " ++ (if positive then "" else "(not ") ++ "(subclass (classOf " ++ value_to_smt σ ++ ") " ++ c ++ ")" ++ (if positive then "" else ")") ++ ")"
     | _ => ""
     end
-  | s_val_field s1 f s2 => "(assert " ++ (if positive then "" else "(not ") ++ "(= (" ++ f ++ " " ++ ref_c_to_smt (s_ref_c_symb s1) ++ ") " ++ ref_c_to_smt (s_ref_c_symb s2) ++ ")" ++ (if positive then "" else ")") ++ ")"
+  | s_val_field s1 f s2 => "(assert " ++ (if positive then "" else "(not ") ++ "(= (" ++ f ++ " " ++ ref_c_to_smt (s_ref_c_symb s1) ++ ") " ++
+       (match class_with_field P f with
+        | Some C =>
+          match fdecl C f with
+          | Some F =>              
+            let t := field_type F in
+            if is_type_primitive t then
+              prim_c_to_str (s_prim_c_symb s2)
+            else
+              ref_c_to_smt (s_ref_c_symb s2)
+          | _ => "" (* error (internal): class C' has no field f *)
+          end         
+        | _ => "" (* error: no class exists with field f *)
+        end) ++ ")" ++ (if positive then "" else ")") ++ ")"
   | s_val_ite σ1 σ2 σ3 => "(assert " ++ (if positive then "" else "(not ") ++ "(ite " ++ value_to_smt σ1 ++ " " ++ value_to_smt σ2 ++ " " ++ value_to_smt σ3 ++ ")" ++ (if positive then "" else ")") ++ ")"
   | _ => ""
   end.
 
-Fixpoint clauses_to_smt (Σ : path_condition) : string :=
+Fixpoint clauses_to_smt (P : s_prg) (Σ : path_condition) : string :=
   match Σ with
   | [] => ""
   | cl :: Σ' => match cl with
-    | clause_pos σ => clause_to_smt σ true ++ LF 
-    | clause_neg σ => clause_to_smt σ false ++ LF 
-    end ++ clauses_to_smt Σ'
+    | clause_pos σ => clause_to_smt P σ true ++ LF 
+    | clause_neg σ => clause_to_smt P σ false ++ LF 
+    end ++ clauses_to_smt P Σ'
   end.
 
 Fixpoint add_vars (ss : list s_symb) (σ : s_val) : list s_symb :=
@@ -138,7 +151,7 @@ Fixpoint contains (ss : list s_symb) (s : s_symb) : bool :=
   | s' :: ss' => s_symb_eqb s s' ||| contains ss' s
   end.
 
-Fixpoint declare_vars_clause  (σ : s_val) (ss : list s_symb) : string :=
+Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ss : list s_symb) : string :=
   match σ with
   | s_val_prim_c p => match p with
     | s_prim_c_symb s => if contains ss s then "" else "(declare-fun " ++ prim_c_to_str (s_prim_c_symb s) ++ " () Int)" ++ LF
@@ -148,31 +161,44 @@ Fixpoint declare_vars_clause  (σ : s_val) (ss : list s_symb) : string :=
     | s_ref_c_symb s => if contains ss s then "" else "(declare-fun " ++ ref_c_to_smt (s_ref_c_symb s) ++ " () SRef)" ++ LF
     | _ => ""
     end
-  | s_val_lt σ1 σ2 => declare_vars_clause σ1 ss ++ declare_vars_clause σ2 (add_vars ss σ1)
-  | s_val_eq σ1 σ2 => declare_vars_clause σ1 ss ++ declare_vars_clause σ2 (add_vars ss σ1)
-  | s_val_subtype σ t => declare_vars_clause σ ss
-  | s_val_field s1 f s2 => (if contains ss s1 then "" else "(declare-fun " ++ ref_c_to_smt (s_ref_c_symb s1) ++ " () SRef)" ++ LF) ++ (if contains ss s2 then "" else "(declare-fun " ++ ref_c_to_smt (s_ref_c_symb s2) ++ " () SRef)" ++ LF)
-  | s_val_ite σ1 σ2 σ3 => declare_vars_clause σ1 ss ++ declare_vars_clause σ2 (add_vars ss σ1) ++ declare_vars_clause σ3 (add_vars (add_vars ss σ1) σ2)
+  | s_val_lt σ1 σ2 => declare_vars_clause P σ1 ss ++ declare_vars_clause P σ2 (add_vars ss σ1)
+  | s_val_eq σ1 σ2 => declare_vars_clause P σ1 ss ++ declare_vars_clause P σ2 (add_vars ss σ1)
+  | s_val_subtype σ t => declare_vars_clause P σ ss
+  | s_val_field s1 f s2 => (if contains ss s1 then "" else "(declare-fun " ++ ref_c_to_smt (s_ref_c_symb s1) ++ " () SRef)" ++ LF) ++ (if contains ss s2 then "" else
+     (match class_with_field P f with
+        | Some C =>
+          match fdecl C f with
+          | Some F =>              
+            let t := field_type F in
+            if is_type_primitive t then
+              "(declare-fun " ++ prim_c_to_str (s_prim_c_symb s2) ++ " () Int)"
+            else
+              "(declare-fun " ++ ref_c_to_smt (s_ref_c_symb s2) ++ " () SRef)"
+          | _ => "" (* error (internal): class C' has no field f *)
+          end         
+        | _ => "" (* error: no class exists with field f *)
+        end) ++ LF) 
+  | s_val_ite σ1 σ2 σ3 => declare_vars_clause P σ1 ss ++ declare_vars_clause P σ2 (add_vars ss σ1) ++ declare_vars_clause P σ3 (add_vars (add_vars ss σ1) σ2)
   | _ => ""
   end.
 
-Fixpoint declare_vars (Σ : path_condition) (ss : list s_symb) : string :=
+Fixpoint declare_vars (P : s_prg) (Σ : path_condition) (ss : list s_symb) : string :=
   match Σ with
   | [] => ""
   | cl :: Σ' => match cl with
-    | clause_pos σ => declare_vars_clause σ ss ++ declare_vars Σ' (add_vars ss σ)
-    | clause_neg σ => declare_vars_clause σ ss ++ declare_vars Σ' (add_vars ss σ)
+    | clause_pos σ => declare_vars_clause P σ ss ++ declare_vars P Σ' (add_vars ss σ)
+    | clause_neg σ => declare_vars_clause P σ ss ++ declare_vars P Σ' (add_vars ss σ)
     end
   end.
 
-Definition path_condition_to_smt (Σ : path_condition) : string :=
-  declare_vars Σ [] ++ clauses_to_smt Σ.
+Definition path_condition_to_smt (P : s_prg) (Σ : path_condition) : string :=
+  declare_vars P Σ [] ++ clauses_to_smt P Σ.
 
 Definition config_to_smt (J : config) : string :=
   let (AA, _) := J in 
   let (BB, Σ) := AA in
   let (P, _) := BB in
-  smt_decls P ++ path_condition_to_smt Σ.
+  smt_decls P ++ path_condition_to_smt P Σ.
 
 Definition step_to_smt (Js : list config) : list string :=
    map config_to_smt Js.
