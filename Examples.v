@@ -20,139 +20,7 @@ Set Asymmetric Patterns.
 
 (***************************** Examples ***************************)
 
-(* An example to check that merging heaps in getfield works:
-   let o1 <> o1' and o2 <> o2', the start heap:
-
-   H  = [L1 -> o1 ; L2 -> o2]
-
-   the heaps to merge:
-
-   H1' = [L1 -> o1' ; L2 -> o2 ; Y0 -> o3']
-   H2' = [L1 -> o1  ; L2 -> o2'; Y1 -> o4' ; Y0 -> o3']
-
-   o1, o1' : A
-   o2, o2' : B
-   o3' : C
-   o4' : D
-
-   and the merge result:
-
-   H' = [L1 -> o1' ; L2 -> o2' ; Y0 -> o3' ; Y1 -> o4']
-
-Example example_merge_getfield_ok : forall o1 o1' o2 o2' o3' o4' M1' M2' M' M T1' T2' T' T R1' R2' R' R K1' K2' K' K, 
-o1 <> o1' -> o2 <> o2' -> 
-M1' = [o1' ; o2 ; o3'] -> 
-M2' = [o1 ; o2' ; o4' ; o3'] -> 
-M' = [o1' ; o2' ; o3' ; o4'] -> 
-M = cons o1 (cons o2 nil) -> 
-T1' = ["A" ; "B" ; "C"] -> 
-T2' = ["A" ; "B" ; "D" ; "C"] -> 
-T' = ["A" ; "B" ; "C" ; "D"] -> 
-R1' (s_symb_expr 0) = Some 2 -> (forall s, s <> (s_symb_expr 0) -> R1' s = None) -> 
-R2' (s_symb_expr 0) = Some 3 -> R2' (s_symb_expr 1) = Some 2 -> (forall s, s <> (s_symb_expr 0) -> s <> (s_symb_expr 1) -> R2' s = None) ->
-R' (s_symb_expr 0) = Some 2 -> R' (s_symb_expr 1) = Some 3 -> forall s, s <> (s_symb_expr 0) -> s <> (s_symb_expr 1) -> R' s = None -> 
-K1' = [None ; None ; Some (s_symb_expr 0)] ->
-K2' = [None ; None :: Some (s_symb_expr 1) ; Some (s_symb_expr 0)] ->
-K' = [None ; None :: Some (s_symb_expr 0) ; Some (s_symb_expr 1)] ->
-merge1 (M1', T1', R1', K1') (M2', T2', R2', K2') (M', T', R', K') (M, T, R, K).
-Proof.
-  intros. unfold merge1. unfold memory. unfold obj_classes. unfold resolutions. unfold resolutions_inv. rewrite H1. rewrite H2. rewrite H3. rewrite H4. 
-  unfold Datatypes.length. rewrite H5. rewrite H6. rewrite H7. rewrite H18. rewrite H19. rewrite H20. unfold merge1_fp. unfold tl. right. right. split.
-  reflexivity. split. reflexivity. right. left. split. reflexivity. split. reflexivity.
-  unfold merge1_a. exists (s_symb_expr 1). split. assumption. right. split. admit. 
-  unfold hd_error. exists (s_symb_expr 0). split. assumption. left. unfold Datatypes.length. unfold Nat.add. exists 2.
-  unfold Nat.sub. unfold List.app. 
-  split. unfold upd_resolutions. unfold Nat.eqb. assumption.
-  split. auto. 
-  split. unfold nth_error. reflexivity.
-  split. reflexivity. split. reflexivity. admit.
-Admitted.
-*)
-
-(* An example to check that the definition of merge works:
-   H  = [L0 -> o1 ; L1 -> o2 ; L2 -> o3]
-   H1 = [L0 -> o1'; L1 -> o2 ; L2 -> o3 ; Y0 -> o4']
-   H2 = [L0 -> o1 ; L1 -> o2 ; L2 -> o3'; Y0 -> o4' ; Y1 -> o5']
-
-   where:
-   get o1 f = v1, o1' = o1[f->σ1] 
-   get o3 f = v3, o3' = o3[f->σ3] 
-   get o4' f = σ4 
-   get o5' f = σ5
-
-   and it must be
-
-   H' = [L1 -> o1'' ; L2 -> o2 ; L3 -> o3'' ; Y0 -> o4' ; Y1 -> o5'']
-
-   where: 
-   o1'' = o1[f->ite(σ,σ1,v1)] 
-   o3'' = o3[f->ite(σ,v3,σ3)] 
-   o5'' = o5'[f->ite(σ,Z5,σ5)]
-   Z = Y1_f
-
-   o1, o1', o1'' : A
-   o2 : B
-   o3, o3', o3'' : C
-   o4' : D
-   o5', o5'' : E 
-*)
-(*Example example_merge_ok : forall o1 o1' o1'' o2 o3 o3' o3'' o4' o5' o5'' Y0 Y1 σ σ1 σ3 σ4 σ5 v1 v3 Z5 f H H1 H2 H', 
-get o1 f = Some v1 -> o1' = upd_obj o1 f σ1 -> v1 <> σ1 -> 
-get o3 f = Some v3 -> o3' = upd_obj o3 f σ3 -> v3 <> σ3 -> 
-get o4' f = Some σ4 -> 
-get o5' f = Some σ5 ->
-Y0 = s_ref_c_symb (s_symb_expr 0) ->
-Y1 = s_ref_c_symb (s_symb_expr 1) ->
-(let (H_1, _) := add_obj H0 o1 in
-let (H_2, _) := add_obj H_1 o2 in
-let (H_3, _) := add_obj H_2 o3 in
-H = H_3) ->
-(let (H_1, _) := add_obj H0 o1' in
-let (H_2, _) := add_obj H_1 o2 in
-let (H_3, _) := add_obj H_2 o3 in
-let H_4 := add_obj_symb H_3 (s_symb_expr 0) o4' in
-H1 = H_4) ->
-(let (H_1, _) := add_obj H0 o1 in
-let (H_2, _) := add_obj H_1 o2 in
-let (H_3, _) := add_obj H_2 o3' in
-let H_4 := add_obj_symb H_3 (s_symb_expr 0) o4' in
-let H_5 := add_obj_symb H_4 (s_symb_expr 1) o5' in
-H2 = H_5) ->
-o1'' = upd_obj o1 f (s_val_ite σ σ1 v1) ->
-o3'' = upd_obj o3 f (s_val_ite σ v3 σ3) ->
-o5'' = upd_obj o5' f (s_val_ite σ Z5 σ5) ->
-(let (H_1, _) := add_obj H0 o1'' in
-let (H_2, _) := add_obj H_1 o2 in
-let (H_3, _) := add_obj H_2 o3'' in
-let H_4 := add_obj_symb H_3 (s_symb_expr 0) o4' in
-let H_5 := add_obj_symb H_4 (s_symb_expr 1) o5'' in
-H' = H_5) ->
-Z5 = s_val_ref_c (s_ref_c_symb (s_symb_fld (s_symb_expr 1) f)) ->
-merge H1 H2 H' H f σ.
-Proof.
-  intros. unfold merge. split. rewrite H12. unfold SemanticsTypes.H0. unfold Aux.MapRefC.cardinal.  unfold Aux.MapRefC.empty. unfold Aux.MapRefC.this.  unfold Aux.MapRefC.Raw.empty.   unfold Aux.MapRefC.this.   unfold Aux.MapRefC.add.  unfold Aux.MapRefC.Raw.add.
-
-unfold Datatypes.length. fold Datatypes.length. rewrite H16. rewrite H17. rewrite H21. unfold Aux.MapRefC.add. unfold Aux.MapRefC.Raw.add. unfold Datatypes.length. right. split. left.
-  - admit.
-  - exists σ1. exists v1. split. split. assumption. split. admit. assumption. 
-    left. split. reflexivity. split. reflexivity. right. split. 
-    -- admit. 
-    -- exists v3. exists σ3. split. split. admit. split. assumption. assumption. 
-       exists (cons o4' nil). exists nil. split. exists (s_symb_expr 0). intros. 
-       --- split. assumption. left. exists 4.  split. assumption. split. auto. unfold sub.
-           unfold nth_error. split. reflexivity. unfold app. split. reflexivity. reflexivity.
-       --- exists (s_symb_expr 1). split. assumption. right. right. split. admit. 
-           exists σ5. split. assumption. unfold hd_error. exists Z5.
-           split. unfold Datatypes.length. unfold add. rewrite H30. reflexivity. 
-           exists (s_symb_expr 0). split. assumption.
-           unfold Datatypes.length. unfold add. unfold app. 
-           left. exists 3. split. unfold upd_resolutions. 
-           unfold Nat.eqb. assumption. split. auto. unfold Nat.sub.
-           unfold nth_error. split. reflexivity. split. rewrite H21.
-           reflexivity. split. reflexivity. split. admit. split. reflexivity. reflexivity.
-Admitted.*)
-
-(* Computes 3 + 2 *)
+(* Computes 2 + 3 *)
 
 Compute parse "class Object {  } (2 + 3)".
 
@@ -166,7 +34,7 @@ Compute step_to_str (step_at P1 0).
 Compute step_to_str (step_at P1 1).
 Compute step_to_str (step_at P1 2).
 
-(* Computes 3 + 2 via method call *)
+(* Computes 2 + 3 via method call *)
 
 Compute parse "class Object {  } class Class1 extends Object {  int m(int x) := (2 + x); } (new Class1.m[3])".
 
@@ -187,7 +55,7 @@ Compute step_to_str (step_at P2 2).
 Compute step_to_str (step_at P2 3).
 Compute step_to_str (step_at P2 4).
 
-(* Computes let x = X0 in if x = 2 then true else false *)
+(* Computes let x := X0 in if x = 2 then true else false *)
 
 Compute parse "class Object {  } let x := X0 in if (x = 2) then true else false".
 
