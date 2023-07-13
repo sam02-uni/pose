@@ -112,14 +112,14 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
           let cl := clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) in
           let Σ' := Σ ++ [cl] in
           Some (H', Σ')
-        | _ => None (* error: no class in P has field f *)
+        | _ => None (* error: no class exists with field f *)
         end
       | Some s_val_unassumed => match class_with_field P f with
         | Some C' =>
           match fdecl C' f with
           | Some F =>              
             let t := field_type F in
-            if (s_ty_eqb t s_ty_int) ||| (s_ty_eqb t s_ty_bool) then
+            if is_type_primitive t then
               match assume_num H Y f with
               | Some (s_prim_c_symb s') =>
                 let σ := s_val_prim_c (s_prim_c_symb s') in
