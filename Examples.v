@@ -622,6 +622,3 @@ Compute step_to_str (step_at P16 4).
 Compute step_to_str (step_at P16 5).
 Compute step_to_str (step_at P16 6).
 Compute step_to_str (step_at P16 7).
-
-Compute step_to_smt (step_at P15 7).
-
