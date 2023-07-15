@@ -78,3 +78,15 @@ Module RefC_as_DT <: DecidableType := UDT_to_DT(RefC_as_UDT).
 Module MapString := FMapWeakList.Make(String_as_DT).
 Module MapRefC := FMapWeakList.Make(RefC_as_DT).
 Module MapNat := FMapWeakList.Make(Nat_as_DT).
+
+(* Difference strings *)
+Definition dstring := string -> string.
+Definition from_string (s : string) : dstring := fun t => String.append s t.
+Definition append (f g : dstring) : dstring := fun t => f (g t).
+Definition to_string (f : dstring) : string := f "".
+Fixpoint dconcat (s : dstring) (l : list dstring) : dstring :=
+  match l with
+  | [] => from_string ""
+  | f :: l' => append (append f s) (dconcat s l')
+  end.
+

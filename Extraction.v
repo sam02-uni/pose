@@ -1,7 +1,7 @@
 From Coq Require Extraction.
 From Coq Require Import extraction.ExtrOcamlBasic.
 From Coq Require Import extraction.ExtrOcamlIntConv.
-From Coq Require Import extraction.ExtrOcamlNativeString.
+From Coq Require Import extraction.ExtrOcamlString.
 From POSE Require Import Syntax.
 From POSE Require Import Interp.
 From POSE Require Import Parse.

@@ -16,17 +16,17 @@ Set Asymmetric Patterns.
 
 (****************************** Prettyprinting **************************)
 
-Definition ty_to_str (t : s_ty) : string :=
+Definition ty_to_dstr (t : s_ty) : dstring :=
   match t with
-  | s_ty_bool => "bool"
-  | s_ty_int => "int"
-  | s_ty_class c => c
+  | s_ty_bool => from_string "bool"
+  | s_ty_int => from_string "int"
+  | s_ty_class c => from_string c
   end.
 
-Definition bool_to_str (b : s_bool) : string :=
+Definition bool_to_dstr (b : s_bool) : dstring :=
   match b with
-  | s_bool_true => "true"
-  | s_bool_false => "false"
+  | s_bool_true => from_string "true"
+  | s_bool_false => from_string "false"
   end.
 
 Definition nat_to_digit (n : nat) : string :=
@@ -43,125 +43,146 @@ Definition nat_to_digit (n : nat) : string :=
     | _ => "9"
   end.
 
-Fixpoint nat_to_str_aux (n k : nat) : string :=
+Fixpoint nat_to_dstr_aux (n k : nat) : dstring :=
   match n, k with
-  | 0, 0    => "0"
-  | 1, 1    => "1"
+  | 0, 0    => from_string "0"
+  | 1, 1    => from_string "1"
   | 0, S _
-  | _, 0    => ""
-  | _, S k' => nat_to_str_aux (div n 10) k' ++ nat_to_digit (n mod 10)
+  | _, 0    => from_string ""
+  | _, S k' => append (nat_to_dstr_aux (div n 10) k') (from_string (nat_to_digit (n mod 10)))
   end.
 
-Definition nat_to_str (n : nat) : string := nat_to_str_aux n n.
+Definition nat_to_dstr (n : nat) : dstring := nat_to_dstr_aux n n.
   
-Definition int_to_str (n : s_int) : string :=
+Definition int_to_dstr (n : s_int) : dstring :=
   match n with
-  | s_int_l n' => nat_to_str n'
+  | s_int_l n' => nat_to_dstr n'
   end.
 
-Definition loc_to_str (l : s_loc) : string :=
+Definition loc_to_dstr (l : s_loc) : dstring :=
   match l with
-  | s_loc_l n => "L" ++ nat_to_str n
+  | s_loc_l n => append (from_string "L") (nat_to_dstr n)
   end.
 
-Definition symb_to_str (s : s_symb) : string :=
+Definition symb_to_dstr (s : s_symb) : dstring :=
   match s with
-  | s_symb_expr n => nat_to_str n 
-  | s_symb_fld n l => nat_to_str n ++ "_" ++ (String.concat "_" l)
+  | s_symb_expr n => nat_to_dstr n 
+  | s_symb_fld n l => append (append (nat_to_dstr n) (from_string "_")) (dconcat (from_string "_") (map from_string l))
   end.
 
-Definition prim_c_to_str (p : s_prim_c) : string :=
+Definition prim_c_to_dstr (p : s_prim_c) : dstring :=
   match p with
-  | s_prim_c_bool b => bool_to_str b
-  | s_prim_c_int n => int_to_str n
-  | s_prim_c_symb s => "X" ++  symb_to_str s
+  | s_prim_c_bool b => bool_to_dstr b
+  | s_prim_c_int n => int_to_dstr n
+  | s_prim_c_symb s => append (from_string "X") (symb_to_dstr s)
   end.
 
-Definition ref_c_to_str (u : s_ref_c) : string :=
+Definition ref_c_to_dstr (u : s_ref_c) : dstring :=
   match u with
-  | s_ref_c_null => "null"
-  | s_ref_c_loc l => loc_to_str l
-  | s_ref_c_symb s => "Y" ++  symb_to_str s
+  | s_ref_c_null => from_string "null"
+  | s_ref_c_loc l => loc_to_dstr l
+  | s_ref_c_symb s => append (from_string "Y") (symb_to_dstr s)
   end.
 
-Fixpoint val_to_str (σ : s_val) : string :=
+Fixpoint val_to_dstr (σ : s_val) : dstring :=
   match σ with
-  | s_val_unassumed => "BOT"
-  | s_val_prim_c p => prim_c_to_str p
-  | s_val_ref_c u => ref_c_to_str u
-  | s_val_add σ1 σ2 => "(" ++ val_to_str σ1 ++ " + " ++ val_to_str σ2 ++ ")"
-  | s_val_lt σ1 σ2 => "(" ++ val_to_str σ1 ++ " < " ++ val_to_str σ2 ++ ")"
-  | s_val_eq σ1 σ2 => "(" ++ val_to_str σ1 ++ " = " ++ val_to_str σ2 ++ ")"
-  | s_val_subtype σ t => "(" ++ val_to_str σ ++ " <: " ++ ty_to_str t ++ ")"
-  | s_val_field s1 fname s2 => "(Y" ++ symb_to_str s1 ++ "." ++  fname ++ " = Z" ++ symb_to_str s2 ++ ")"
-  | s_val_ite σ1 σ2 σ3 => "ite(" ++ val_to_str σ1 ++ ", " ++ val_to_str σ2 ++ ", " ++ val_to_str σ3 ++ ")"
+  | s_val_unassumed => from_string "BOT"
+  | s_val_prim_c p => prim_c_to_dstr p
+  | s_val_ref_c u => ref_c_to_dstr u
+  | s_val_add σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " + ")) (val_to_dstr σ2)) (from_string ")")
+  | s_val_lt σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " < ")) (val_to_dstr σ2)) (from_string ")")
+  | s_val_eq σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " = ")) (val_to_dstr σ2)) (from_string ")")
+  | s_val_subtype σ t => append (append (append (append (from_string "(") (val_to_dstr σ)) (from_string " <: ")) (ty_to_dstr t)) (from_string ")")
+  | s_val_field s1 fname s2 => append (append (append (append (append (append (from_string "(Y") (symb_to_dstr s1)) (from_string ".")) (from_string fname)) (from_string " = Z")) (symb_to_dstr s2)) (from_string ")")
+  | s_val_ite σ1 σ2 σ3 => append (append (append (append (append (append (from_string "ite(") (val_to_dstr σ1)) (from_string ", ")) (val_to_dstr σ2)) (from_string ", ")) (val_to_dstr σ3)) (from_string ")")
   end.
 
-Fixpoint expr_to_str (e : s_expr) : string :=
+Fixpoint expr_to_dstr (e : s_expr) : dstring :=
   match e with
-  | s_expr_var x => x
-  | s_expr_val σ => val_to_str σ
-  | s_expr_new c => "new " ++ c
-  | s_expr_getfield e1 fname => "(" ++ expr_to_str e1 ++ "." ++ fname ++ ")"
-  | s_expr_putfield e1 fname e2 => "(" ++ expr_to_str e1 ++ "." ++ fname ++ " := " ++ expr_to_str e2 ++ ")"
-  | s_expr_let x e1 e2 => "let " ++ x ++ " := " ++ expr_to_str e1 ++ " in " ++ expr_to_str e2
-  | s_expr_add e1 e2 => "(" ++ expr_to_str e1 ++ " + " ++ expr_to_str e2 ++ ")"
-  | s_expr_lt e1 e2 => "(" ++ expr_to_str e1 ++ " < " ++ expr_to_str e2 ++ ")"
-  | s_expr_eq e1 e2 => "(" ++ expr_to_str e1 ++ " = " ++ expr_to_str e2 ++ ")"
-  | s_expr_instanceof e1 c =>  "(" ++ expr_to_str e1 ++ " instanceof " ++ c ++ ")"
-  | s_expr_if e1 e2 e3 => "if " ++ expr_to_str e1 ++ " then " ++ expr_to_str e2 ++ " else " ++ expr_to_str e3
-  | s_expr_invoke e1 m e2 => "(" ++ expr_to_str e1 ++ "." ++ m ++ "[" ++ expr_to_str e2 ++ "])"
+  | s_expr_var x => (from_string x)
+  | s_expr_val σ => val_to_dstr σ
+  | s_expr_new c => append (from_string "new ") (from_string c)
+  | s_expr_getfield e1 fname => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string ".")) (from_string fname)) (from_string ")")
+  | s_expr_putfield e1 fname e2 => append (append (append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string ".")) (from_string fname)) (from_string " := ")) (expr_to_dstr e2)) (from_string ")")
+  | s_expr_let x e1 e2 => append (append (append (append (append (from_string "let ") (from_string x)) (from_string " := ")) (expr_to_dstr e1)) (from_string " in ")) (expr_to_dstr e2)
+  | s_expr_add e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " + ")) (expr_to_dstr e2)) (from_string ")")
+  | s_expr_lt e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " < ")) (expr_to_dstr e2)) (from_string ")")
+  | s_expr_eq e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " = ")) (expr_to_dstr e2)) (from_string ")")
+  | s_expr_instanceof e1 c =>  append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " instanceof ")) (from_string c)) (from_string ")")
+  | s_expr_if e1 e2 e3 => append (append (append (append (append (from_string "if ") (expr_to_dstr e1)) (from_string " then ")) (expr_to_dstr e2)) (from_string " else ")) (expr_to_dstr e3)
+  | s_expr_invoke e1 m e2 => append (append (append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string ".")) (from_string m)) (from_string "[")) (expr_to_dstr e2)) (from_string "])")
   end.
 
-Definition dc_v_to_str (semicolon : bool) (F : s_dc_v) : string :=
+Definition dc_v_to_dstr (semicolon : bool) (F : s_dc_v) : dstring :=
   match F with
-  | s_dc_v_l t x => ty_to_str t ++ " " ++ x ++ (if semicolon then ";" else "")
+  | s_dc_v_l t x => append (append (append (ty_to_dstr t) (from_string " ")) (from_string x)) (from_string (if semicolon then ";" else ""))
   end.
 
-Definition dc_m_to_str (D : s_dc_m) : string :=
+Definition dc_m_to_dstr (D : s_dc_m) : dstring :=
   match D with
-  | s_dc_m_l t m v e => ty_to_str t ++ " " ++ m ++ "(" ++ dc_v_to_str false v ++ ") := " ++ expr_to_str e ++ ";"
+  | s_dc_m_l t m v e => append (append (append (append (append (append (append (ty_to_dstr t) (from_string " ")) (from_string m)) (from_string "(")) (dc_v_to_dstr false v)) (from_string ") := ")) (expr_to_dstr e)) (from_string ";")
   end.
 
-Definition dc_c_to_str (C : s_dc_c) : string :=
+Definition dc_c_to_dstr (C : s_dc_c) : dstring :=
   match C with
-  | s_dc_c_l c csup Fs Ds => "class " ++ c ++ (if String.eqb csup "" then "" else (" extends " ++ csup)) ++ " { " ++ (String.concat " " (List.map (dc_v_to_str true) Fs)) ++ " " ++ (String.concat " " (List.map dc_m_to_str Ds)) ++ "}"
+  | s_dc_c_l c csup Fs Ds => append (append (append (append (append (append (append (from_string "class ") (from_string c)) (from_string (if String.eqb csup "" then "" else (" extends " ++ csup)))) (from_string " { ")) (dconcat (from_string " ") (List.map (dc_v_to_dstr true) Fs))) (from_string " ")) (dconcat (from_string " ") (List.map dc_m_to_dstr Ds))) (from_string "}")
   end.
 
-Definition prg_to_str (P : s_prg) : string :=
+Definition prg_to_dstr (P : s_prg) : dstring :=
   match P with
-  | s_prg_l Cs e => (String.concat " " (List.map dc_c_to_str Cs)) ++ " " ++ expr_to_str e
+  | s_prg_l Cs e => append (append (dconcat (from_string " ") (List.map dc_c_to_dstr Cs)) (from_string " ")) (expr_to_dstr e)
   end.
 
 Section ObjectToStr.
 
-Let Fixpoint object_to_str_aux (elts : list (string * s_val)) : string :=
+Let Fixpoint object_to_dstr_aux (elts : list (string * s_val)) : dstring :=
   match elts with
-  | [] => ""
-  | (f, σ) :: other_elts => f ++ ":" ++ val_to_str σ ++ ", " ++ object_to_str_aux other_elts
+  | [] => (from_string "")
+  | (f, σ) :: other_elts => append (append (append (append (from_string f) (from_string ":")) (val_to_dstr σ)) (from_string ", ")) (object_to_dstr_aux other_elts)
   end.
 
-Definition object_to_str (o : object) : string :=
-  "{class " ++ o_class_name o ++ ", " ++ object_to_str_aux (MapString.elements (o_memory o)) ++ "}".
+Definition object_to_dstr (o : object) : dstring :=
+  append (append (append (append (from_string "{class ") (from_string (o_class_name o))) (from_string ", ")) (object_to_dstr_aux (MapString.elements (o_memory o)))) (from_string "}").
 
 End ObjectToStr.
 
-Definition heap_to_str (H : heap) : string :=
-  "<" ++ String.concat ", " (List.map (fun x => match x with
-                                                | (u, o) => append (ref_c_to_str u) (append " -> " (object_to_str o))
-                                                end) (MapRefC.elements H)) ++ ">".
+Definition heap_to_dstr (H : heap) : dstring :=
+  append (append (from_string "<") (dconcat (from_string ", ")
+                                      (List.map (fun x => match x with
+                                                          | (u, o) => append (append (ref_c_to_dstr u) (from_string " -> ")) (object_to_dstr o)
+                                                          end)
+                                         (MapRefC.elements H))))
+    (from_string ">").
 
-Fixpoint path_condition_to_str (Σ : path_condition) : string :=
+Fixpoint path_condition_to_dstr (Σ : path_condition) : dstring :=
   match Σ with
-  | [] => "true"
-  | clause_pos σ :: other_Σ => (val_to_str σ) ++ " && " ++ (path_condition_to_str other_Σ)
-  | clause_neg σ :: other_Σ => "~" ++ (val_to_str σ) ++ " && " ++ (path_condition_to_str other_Σ)
+  | [] => (from_string "true")
+  | clause_pos σ :: other_Σ => append (append (val_to_dstr σ) (from_string " && ")) (path_condition_to_dstr other_Σ)
+  | clause_neg σ :: other_Σ => append (append (append (from_string "~") (val_to_dstr σ)) (from_string " && ")) (path_condition_to_dstr other_Σ)
   end.
+
+Definition config_to_dstr (J : config) : dstring :=
+  match J with
+  | (P, H, Σ, e) => append (append (append (append (append (append (append (append (from_string "[") (prg_to_dstr P)) (from_string ", ")) (heap_to_dstr H)) (from_string ", ")) (path_condition_to_dstr Σ)) (from_string ", ")) (expr_to_dstr e)) (from_string "]")
+  end.
+
+Definition nat_to_str (n : nat) : string :=
+  to_string (nat_to_dstr n).
+
+Definition loc_to_str (l : s_loc) : string :=
+  to_string (loc_to_dstr l).
+
+Definition symb_to_str (s : s_symb) : string :=
+  to_string (symb_to_dstr s).
+
+Definition prim_c_to_str (p : s_prim_c) : string :=
+  to_string (prim_c_to_dstr p).
+
+Definition prg_to_str (P : s_prg) : string :=
+  to_string (prg_to_dstr P).
 
 Definition config_to_str (J : config) : string :=
-  match J with
-  | (P, H, Σ, e) => "[" ++ prg_to_str P ++ ", " ++ heap_to_str H ++ ", " ++ path_condition_to_str Σ ++ ", " ++ expr_to_str e ++ "]"
-  end.
+  to_string (config_to_dstr J).
 
 Definition step_to_str (Js : list config) : list string :=
    map config_to_str Js.
