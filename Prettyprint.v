@@ -166,6 +166,10 @@ Definition config_to_dstr (J : config) : dstring :=
   | (P, H, Σ, e) => append (append (append (append (append (append (append (append (from_string "[") (prg_to_dstr P)) (from_string ", ")) (heap_to_dstr H)) (from_string ", ")) (path_condition_to_dstr Σ)) (from_string ", ")) (expr_to_dstr e)) (from_string "]")
   end.
 
+Definition step_to_dstr (Js : list config) : list dstring :=
+   map config_to_dstr Js.
+
+(*
 Definition nat_to_str (n : nat) : string :=
   to_string (nat_to_dstr n).
 
@@ -186,3 +190,4 @@ Definition config_to_str (J : config) : string :=
 
 Definition step_to_str (Js : list config) : list string :=
    map config_to_str Js.
+*)

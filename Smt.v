@@ -129,44 +129,38 @@ Fixpoint clauses_to_dsmt (P : s_prg) (Σ : path_condition) : dstring :=
     end) (clauses_to_dsmt P Σ')
   end.
 
-Fixpoint add_vars (ss : list s_symb) (σ : s_val) : list s_symb :=
+Fixpoint add_vars (ss : SetSymb.t) (σ : s_val) : SetSymb.t :=
   match σ with
   | s_val_prim_c p => match p with
-    | s_prim_c_symb s => ss ++ [s]
+    | s_prim_c_symb s => SetSymb.add s ss
     | _ => ss
     end
   | s_val_ref_c u => match u with
-    | s_ref_c_symb s => ss ++ [s]
+    | s_ref_c_symb s => SetSymb.add s ss
     | _ => ss
     end
   | s_val_lt σ1 σ2 => add_vars (add_vars ss σ1) σ2
   | s_val_eq σ1 σ2 => add_vars (add_vars ss σ1) σ2
   | s_val_subtype σ t => add_vars ss σ
-  | s_val_field s1 f s2 => ss ++ [s1 ; s2]
+  | s_val_field s1 f s2 => SetSymb.add s2 (SetSymb.add s1 ss)
   | s_val_ite σ1 σ2 σ3 => add_vars (add_vars (add_vars ss σ1) σ2) σ3
   | _ => ss
   end.
 
-Fixpoint contains (ss : list s_symb) (s : s_symb) : bool :=
-  match ss with
-  | [] => false
-  | s' :: ss' => s_symb_eqb s s' ||| contains ss' s
-  end.
-
-Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ss : list s_symb) : dstring :=
+Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ss : SetSymb.t) : dstring :=
   match σ with
   | s_val_prim_c p => match p with
-    | s_prim_c_symb s => if contains ss s then (from_string "") else append (append (append (from_string "(declare-fun ") (prim_c_to_dstr (s_prim_c_symb s))) (from_string " () Int)")) LF
+    | s_prim_c_symb s => if SetSymb.mem s ss then (from_string "") else append (append (append (from_string "(declare-fun ") (prim_c_to_dstr (s_prim_c_symb s))) (from_string " () Int)")) LF
     | _ => from_string ""
     end
   | s_val_ref_c u => match u with
-    | s_ref_c_symb s => if contains ss s then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s))) (from_string " () SRef)")) LF
+    | s_ref_c_symb s => if SetSymb.mem s ss then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s))) (from_string " () SRef)")) LF
     | _ => from_string ""
     end
   | s_val_lt σ1 σ2 => append (declare_vars_clause P σ1 ss) (declare_vars_clause P σ2 (add_vars ss σ1))
   | s_val_eq σ1 σ2 => append (declare_vars_clause P σ1 ss) (declare_vars_clause P σ2 (add_vars ss σ1))
   | s_val_subtype σ t => declare_vars_clause P σ ss
-  | s_val_field s1 f s2 => if contains ss s1 then (from_string "") else append (append (append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s1))) (from_string " () SRef)")) LF) (if contains ss s2 then (from_string "") else
+  | s_val_field s1 f s2 => if SetSymb.mem s1 ss then (from_string "") else append (append (append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s1))) (from_string " () SRef)")) LF) (if SetSymb.mem s2 ss then (from_string "") else
      (match class_with_field P f with
         | Some C =>
           match fdecl C f with
@@ -184,7 +178,7 @@ Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ss : list s_symb) : dstri
   | _ => from_string ""
   end.
 
-Fixpoint declare_vars (P : s_prg) (Σ : path_condition) (ss : list s_symb) : dstring :=
+Fixpoint declare_vars (P : s_prg) (Σ : path_condition) (ss : SetSymb.t) : dstring :=
   match Σ with
   | [] => from_string ""
   | cl :: Σ' => match cl with
@@ -194,7 +188,7 @@ Fixpoint declare_vars (P : s_prg) (Σ : path_condition) (ss : list s_symb) : dst
   end.
 
 Definition path_condition_to_dsmt (P : s_prg) (Σ : path_condition) : dstring :=
-  append (declare_vars P Σ []) (clauses_to_dsmt P Σ).
+  append (declare_vars P Σ SetSymb.empty) (clauses_to_dsmt P Σ).
 
 Definition config_to_dsmt (J : config) : dstring :=
   let (AA, _) := J in 
@@ -202,8 +196,10 @@ Definition config_to_dsmt (J : config) : dstring :=
   let (P, _) := BB in
   append (smt_decls P) (path_condition_to_dsmt P Σ).
 
+(*
 Definition config_to_smt (J : config) : string :=
   to_string (config_to_dsmt J).
+ *)
 
-Definition step_to_smt (Js : list config) : list string :=
-   map config_to_smt Js.
+Definition step_to_dsmt (Js : list config) : list dstring :=
+   map config_to_dsmt Js.
