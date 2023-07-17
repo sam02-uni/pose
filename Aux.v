@@ -147,6 +147,7 @@ Module SetSymb := MSetWeakList.Make(SSymb_as_DT).
 
 (* Difference strings *)
 Definition dstring := list string.
+
 Definition from_string (s : string) : dstring := [s].
 
 Fixpoint add_last (f : dstring) (s : string): dstring :=
@@ -168,6 +169,10 @@ Definition append (f g : dstring) : dstring :=
 Fixpoint dconcat (s : dstring) (l : list dstring) : dstring :=
   match l with
   | [] => from_string ""
+  | [f] => f
   | f :: l' => append (append f s) (dconcat s l')
   end.
 
+(* Direct translation to string: use only with short strings. *)
+Definition to_string (s : dstring) : string :=
+  String.concat "" s.
