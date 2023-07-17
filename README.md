@@ -15,7 +15,7 @@ Of course you have to add to pose.ml the code that parses your program to analyz
     $ ocamlopt -o dll pose.ml dll.ml
     $ ./dll
 
-Note that this prototype is underoptimized, and consequently slow and memory-consuming. If execution crashes with a stack overflow error try and crank up the stack memory with the command ulimit -s. Expect in any case execution times to suddenly explode around an execution depth of about 110 steps.
+Note that this prototype is underoptimized, and consequently slow and memory-consuming. If execution crashes with a stack overflow error try and crank up the stack memory with the command ulimit -s. Expect in any case execution times to suddenly explode when converting to string big states: Producing states scales sufficiently well, but stringification does not. I optimized to have decent time with the experiments in this repo, but on other programs your mileage may vary.
 
 Some notes on the small programming language in which you must write the programs you want this prototype to symbolically execute: It comes with some limitations, that you can in some ways overcome.
 
