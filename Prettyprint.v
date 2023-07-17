@@ -169,18 +169,7 @@ Definition config_to_dstr (J : config) : dstring :=
 Definition step_to_dstr (Js : list config) : list dstring :=
    map config_to_dstr Js.
 
-(*
-Definition nat_to_str (n : nat) : string :=
-  to_string (nat_to_dstr n).
-
-Definition loc_to_str (l : s_loc) : string :=
-  to_string (loc_to_dstr l).
-
-Definition symb_to_str (s : s_symb) : string :=
-  to_string (symb_to_dstr s).
-
-Definition prim_c_to_str (p : s_prim_c) : string :=
-  to_string (prim_c_to_dstr p).
+(* Direct translation to string: use only with small configs. *)
 
 Definition prg_to_str (P : s_prg) : string :=
   to_string (prg_to_dstr P).
@@ -190,4 +179,3 @@ Definition config_to_str (J : config) : string :=
 
 Definition step_to_str (Js : list config) : list string :=
    map config_to_str Js.
-*)
