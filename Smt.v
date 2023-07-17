@@ -160,20 +160,20 @@ Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ss : SetSymb.t) : dstring
   | s_val_lt σ1 σ2 => append (declare_vars_clause P σ1 ss) (declare_vars_clause P σ2 (add_vars ss σ1))
   | s_val_eq σ1 σ2 => append (declare_vars_clause P σ1 ss) (declare_vars_clause P σ2 (add_vars ss σ1))
   | s_val_subtype σ t => declare_vars_clause P σ ss
-  | s_val_field s1 f s2 => if SetSymb.mem s1 ss then (from_string "") else append (append (append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s1))) (from_string " () SRef)")) LF) (if SetSymb.mem s2 ss then (from_string "") else
+  | s_val_field s1 f s2 => append (if SetSymb.mem s1 ss then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s1))) (from_string " () SRef)")) LF) (if SetSymb.mem s2 ss then (from_string "") else
      (match class_with_field P f with
         | Some C =>
           match fdecl C f with
           | Some F =>              
             let t := field_type F in
             if is_type_primitive t then
-              append (append (from_string "(declare-fun ") (prim_c_to_dstr (s_prim_c_symb s2))) (from_string " () Int)")
+              append (append (append (from_string "(declare-fun ") (prim_c_to_dstr (s_prim_c_symb s2))) (from_string " () Int)")) LF
             else
-              append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s2))) (from_string " () SRef)")
+              append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s2))) (from_string " () SRef)")) LF
           | _ => from_string "" (* error (internal): class C' has no field f *)
           end         
         | _ => from_string "" (* error: no class exists with field f *)
-        end))) LF 
+        end))
   | s_val_ite σ1 σ2 σ3 => append (append (declare_vars_clause P σ1 ss) (declare_vars_clause P σ2 (add_vars ss σ1))) (declare_vars_clause P σ3 (add_vars (add_vars ss σ1) σ2))
   | _ => from_string ""
   end.
@@ -196,10 +196,13 @@ Definition config_to_dsmt (J : config) : dstring :=
   let (P, _) := BB in
   append (smt_decls P) (path_condition_to_dsmt P Σ).
 
-(*
-Definition config_to_smt (J : config) : string :=
-  to_string (config_to_dsmt J).
- *)
-
 Definition step_to_dsmt (Js : list config) : list dstring :=
    map config_to_dsmt Js.
+
+(* Direct translation to string: use only with small configs. *)
+
+Definition config_to_smt (J : config) : string :=
+  to_string (config_to_dsmt J).
+
+Definition step_to_smt (Js : list config) : list string :=
+   map config_to_smt Js.
