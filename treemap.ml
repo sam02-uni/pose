@@ -19,26 +19,16 @@ let rec print_dstring_endline ds =
 let print_dstrings_endline dss =
   let _ = map (fun ds -> let _ = print_dstring_endline ds in print_endline "\n=========\n") dss in ()
 
-let src_dll = read_whole_file "./dll.txt"
-
-(* Leaves with index = 4:
- * 46 : 1
- * 66 : 2
- * 82 : 3
- * 98 : 4
- * 114 : 5
- * 130 : 6
- * 143 : 7
- *)
+let src_treemap = read_whole_file "./treemap.txt"
 
 let count_at n =
-  match (parse src_dll) with
+  match (parse src_treemap) with
   | (_, SomeE p) -> print_endline (string_of_int (List.length (step_at p (nat_of_int n))))
   | _ -> print_endline "parsing error"
 
 let print_at n =
-match (parse src_dll) with
+match (parse src_treemap) with
   | (_, SomeE p) -> let ds = (step_to_dstr (step_at p (nat_of_int n))) in print_dstrings_endline ds
   | _ -> print_endline "parsing error"
 
-let () = print_at 143
+let () = print_at 140

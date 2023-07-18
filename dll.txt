@@ -66,6 +66,6 @@ class DoubleLinkedList extends Object {
 let l := Y0 in
 let o := Y1 in
 let p := new AddParameters in
-let foo1 := (p.index := 2) in
+let foo1 := (p.index := 4) in
 let foo2 := (p.elem := o) in
 (l.add[p])
