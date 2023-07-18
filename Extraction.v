@@ -10,4 +10,4 @@ From POSE Require Import Smt.
 
 Extraction Language OCaml.
 
-Extraction "./pose.ml" CObject compute step_at parse step_to_str step_to_smt.
+Extraction "./pose.ml" CObject compute step_at parse step_to_dstr step_to_dsmt.
