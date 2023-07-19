@@ -343,6 +343,12 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
   | s_expr_eq (s_expr_val (s_val_ref_c (s_ref_c_loc (s_loc_l n1)))) (s_expr_val (s_val_ref_c (s_ref_c_loc (s_loc_l n2)))) =>
     let e' := s_expr_val (s_val_prim_c (s_prim_c_bool (if Nat.eqb n1 n2 then s_bool_true else s_bool_false))) in
     [(H, Σ, e')]
+  | s_expr_eq (s_expr_val (s_val_ref_c (s_ref_c_loc l))) (s_expr_val (s_val_ref_c (s_ref_c_symb s))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) in
+    [(H, Σ, e')]
+  | s_expr_eq (s_expr_val (s_val_ref_c (s_ref_c_symb s))) (s_expr_val (s_val_ref_c (s_ref_c_loc l))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) in
+    [(H, Σ, e')]
   | s_expr_eq (s_expr_val σ1) (s_expr_val σ2) =>
     let e' := s_expr_val (s_val_eq σ1 σ2) in
     [(H, Σ, e')]

@@ -276,12 +276,22 @@ Inductive cstep : config -> config -> Prop :=
   e = s_expr_eq (s_expr_val (s_val_ref_c (s_ref_c_loc (s_loc_l n1)))) (s_expr_val (s_val_ref_c (s_ref_c_loc (s_loc_l n2)))) ->
   e' = s_expr_val (s_val_prim_c (s_prim_c_bool (if Nat.eqb n1 n2 then s_bool_true else s_bool_false))) ->
   (P, H, S, e) --> (P, H, S, e')
-| CStepEq10 : forall P H S e e' n b σ1 σ2,
+| CStepEq10 : forall P H S e e' l s,
+  e = s_expr_eq (s_expr_val (s_val_ref_c (s_ref_c_loc l))) (s_expr_val (s_val_ref_c (s_ref_c_symb s))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepEq11 : forall P H S e e' l s,
+  e = s_expr_eq (s_expr_val (s_val_ref_c (s_ref_c_symb s))) (s_expr_val (s_val_ref_c (s_ref_c_loc l))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepEq12 : forall P H S e e' n b l s σ1 σ2,
   e = s_expr_eq (s_expr_val σ1) (s_expr_val σ2) ->
   ((σ1 <> s_val_prim_c (s_prim_c_int (s_int_l n)) /\ σ1 <> s_val_prim_c (s_prim_c_bool b) /\
   σ1 <> s_val_ref_c s_ref_c_null /\ σ1 <> s_val_ref_c (s_ref_c_loc (s_loc_l n))) \/
   (σ2 <> s_val_prim_c (s_prim_c_int (s_int_l n)) /\ σ2 <> s_val_prim_c (s_prim_c_bool b) /\
   σ2 <> s_val_ref_c s_ref_c_null /\ σ2 <> s_val_ref_c (s_ref_c_loc (s_loc_l n)))) ->
+  ~(σ1 = (s_val_ref_c (s_ref_c_loc l)) /\ σ2 = (s_val_ref_c (s_ref_c_symb s))) ->
+  ~(σ2 = (s_val_ref_c (s_ref_c_loc l)) /\ σ1 = (s_val_ref_c (s_ref_c_symb s))) ->
   e' = s_expr_val (s_val_eq σ1 σ2) ->
   (P, H, S, e) --> (P, H, S, e')
 | CStepInstanceof1 : forall P H S e e' c,
