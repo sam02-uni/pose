@@ -65,7 +65,7 @@ Definition type_to_dsmt (t : s_ty) : dstring :=
   end.
 
 Definition field_to_dsmt (F : s_dc_v) : dstring :=
-  append (append (append (append (append (from_string "(declare-fun ") (from_string (field_name F))) (from_string " (SRef) ")) (type_to_dsmt (field_type F))) (from_string ")")) LF.
+  append (append (append (append (append (append (append (append (append (from_string "(declare-fun ") (from_string (field_name F))) (from_string " (SRef) ")) (type_to_dsmt (field_type F))) (from_string ")")) LF) (from_string (if (is_type_primitive (field_type F)) then "(assert (= 0 (" else "(assert (= _null ("))) (from_string (field_name F))) (from_string " _null)))")) LF.
 
 Definition class_to_dsmt (P : s_prg) (C : s_dc_c) : dstring :=
   append (append (append (append (append (append (from_string "(define-fun ") (from_string (class_name C))) (from_string " () SCl ")) (list_nat_to_dsmt (class_to_list P C))) (from_string ")")) LF) (dconcat (from_string "") (List.map field_to_dsmt (fields C))).
@@ -129,66 +129,101 @@ Fixpoint clauses_to_dsmt (P : s_prg) (Σ : path_condition) : dstring :=
     end) (clauses_to_dsmt P Σ')
   end.
 
-Fixpoint add_vars (ss : SetSymb.t) (σ : s_val) : SetSymb.t :=
+Fixpoint add_vars_prim (P : s_prg) (σ : s_val) (ssPrim : SetSymb.t) : SetSymb.t :=
   match σ with
   | s_val_prim_c p => match p with
-    | s_prim_c_symb s => SetSymb.add s ss
-    | _ => ss
+    | s_prim_c_symb s => SetSymb.add s ssPrim
+    | _ => ssPrim
     end
-  | s_val_ref_c u => match u with
-    | s_ref_c_symb s => SetSymb.add s ss
-    | _ => ss
-    end
-  | s_val_lt σ1 σ2 => add_vars (add_vars ss σ1) σ2
-  | s_val_eq σ1 σ2 => add_vars (add_vars ss σ1) σ2
-  | s_val_subtype σ t => add_vars ss σ
-  | s_val_field s1 f s2 => SetSymb.add s2 (SetSymb.add s1 ss)
-  | s_val_ite σ1 σ2 σ3 => add_vars (add_vars (add_vars ss σ1) σ2) σ3
-  | _ => ss
-  end.
-
-Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ss : SetSymb.t) : dstring :=
-  match σ with
-  | s_val_prim_c p => match p with
-    | s_prim_c_symb s => if SetSymb.mem s ss then (from_string "") else append (append (append (from_string "(declare-fun ") (prim_c_to_dstr (s_prim_c_symb s))) (from_string " () Int)")) LF
-    | _ => from_string ""
-    end
-  | s_val_ref_c u => match u with
-    | s_ref_c_symb s => if SetSymb.mem s ss then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s))) (from_string " () SRef)")) LF
-    | _ => from_string ""
-    end
-  | s_val_lt σ1 σ2 => append (declare_vars_clause P σ1 ss) (declare_vars_clause P σ2 (add_vars ss σ1))
-  | s_val_eq σ1 σ2 => append (declare_vars_clause P σ1 ss) (declare_vars_clause P σ2 (add_vars ss σ1))
-  | s_val_subtype σ t => declare_vars_clause P σ ss
-  | s_val_field s1 f s2 => append (if SetSymb.mem s1 ss then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s1))) (from_string " () SRef)")) LF) (if SetSymb.mem s2 ss then (from_string "") else
-     (match class_with_field P f with
+  | s_val_lt σ1 σ2 => add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim) 
+  | s_val_eq σ1 σ2 => add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim)
+  | s_val_subtype σ t => add_vars_prim P σ ssPrim
+  | s_val_field s1 f s2 => (match class_with_field P f with
         | Some C =>
           match fdecl C f with
           | Some F =>              
             let t := field_type F in
             if is_type_primitive t then
-              append (append (append (from_string "(declare-fun ") (prim_c_to_dstr (s_prim_c_symb s2))) (from_string " () Int)")) LF
+              SetSymb.add s2 ssPrim
             else
-              append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s2))) (from_string " () SRef)")) LF
+              ssPrim
+          | _ => ssPrim (* error (internal): class C' has no field f *)
+          end         
+        | _ => ssPrim (* error: no class exists with field f *)
+        end)
+  | s_val_ite σ1 σ2 σ3 => add_vars_prim P σ3 (add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim))
+  | _ => ssPrim
+  end.
+
+Fixpoint add_vars_ref (P : s_prg) (σ : s_val) (ssRef : SetSymb.t) : SetSymb.t :=
+  match σ with
+  | s_val_ref_c u => match u with
+    | s_ref_c_symb s => SetSymb.add s ssRef
+    | _ => ssRef
+    end
+  | s_val_lt σ1 σ2 => add_vars_ref P σ2 (add_vars_ref P σ1 ssRef)
+  | s_val_eq σ1 σ2 => add_vars_ref P σ2 (add_vars_ref P σ1 ssRef)
+  | s_val_subtype σ t => add_vars_ref P σ ssRef
+  | s_val_field s1 f s2 => (match class_with_field P f with
+        | Some C =>
+          match fdecl C f with
+          | Some F =>              
+            let t := field_type F in
+            if is_type_primitive t then
+              SetSymb.add s1 ssRef
+            else
+              SetSymb.add s2 (SetSymb.add s1 ssRef)
+          | _ => SetSymb.add s1 ssRef (* error (internal): class C' has no field f *)
+          end         
+        | _ => SetSymb.add s1 ssRef (* error: no class exists with field f *)
+        end)
+  | s_val_ite σ1 σ2 σ3 => add_vars_ref P σ3 (add_vars_ref P σ2 (add_vars_ref P σ1 ssRef))
+  | _ => ssRef
+  end.
+
+Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ssPrim : SetSymb.t) (ssRef : SetSymb.t) : dstring :=
+  match σ with
+  | s_val_prim_c p => match p with
+    | s_prim_c_symb s => if SetSymb.mem s ssPrim then (from_string "") else append (append (append (from_string "(declare-fun ") (prim_c_to_dstr (s_prim_c_symb s))) (from_string " () Int)")) LF
+    | _ => from_string ""
+    end
+  | s_val_ref_c u => match u with
+    | s_ref_c_symb s => if SetSymb.mem s ssRef then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s))) (from_string " () SRef)")) LF
+    | _ => from_string ""
+    end
+  | s_val_lt σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef))
+  | s_val_eq σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef))
+  | s_val_subtype σ t => declare_vars_clause P σ ssPrim ssRef
+  | s_val_field s1 f s2 => append (if SetSymb.mem s1 ssRef then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s1))) (from_string " () SRef)")) LF) (match class_with_field P f with
+        | Some C =>
+          match fdecl C f with
+          | Some F =>              
+            let t := field_type F in
+            if is_type_primitive t then
+              (if SetSymb.mem s2 ssPrim then (from_string "") else
+              append (append (append (from_string "(declare-fun ") (prim_c_to_dstr (s_prim_c_symb s2))) (from_string " () Int)")) LF)
+            else
+              (if SetSymb.mem s2 ssRef then (from_string "") else
+              append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s2))) (from_string " () SRef)")) LF)
           | _ => from_string "" (* error (internal): class C' has no field f *)
           end         
         | _ => from_string "" (* error: no class exists with field f *)
-        end))
-  | s_val_ite σ1 σ2 σ3 => append (append (declare_vars_clause P σ1 ss) (declare_vars_clause P σ2 (add_vars ss σ1))) (declare_vars_clause P σ3 (add_vars (add_vars ss σ1) σ2))
+        end)
+  | s_val_ite σ1 σ2 σ3 => append (append (declare_vars_clause P σ1 ssPrim ssRef) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef))) (declare_vars_clause P σ3 (add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim)) (add_vars_ref P σ2 (add_vars_ref P σ1 ssRef)))
   | _ => from_string ""
   end.
 
-Fixpoint declare_vars (P : s_prg) (Σ : path_condition) (ss : SetSymb.t) : dstring :=
+Fixpoint declare_vars (P : s_prg) (Σ : path_condition) (ssPrim ssRef : SetSymb.t) : dstring :=
   match Σ with
   | [] => from_string ""
   | cl :: Σ' => match cl with
-    | clause_pos σ => append (declare_vars_clause P σ ss) (declare_vars P Σ' (add_vars ss σ))
-    | clause_neg σ => append (declare_vars_clause P σ ss) (declare_vars P Σ' (add_vars ss σ))
+    | clause_pos σ => append (declare_vars_clause P σ ssPrim ssRef) (declare_vars P Σ' (add_vars_prim P σ ssPrim) (add_vars_ref P σ ssRef))
+    | clause_neg σ => append (declare_vars_clause P σ ssPrim ssRef) (declare_vars P Σ' (add_vars_prim P σ ssPrim) (add_vars_ref P σ ssRef))
     end
   end.
 
 Definition path_condition_to_dsmt (P : s_prg) (Σ : path_condition) : dstring :=
-  append (declare_vars P Σ SetSymb.empty) (clauses_to_dsmt P Σ).
+  append (declare_vars P Σ SetSymb.empty SetSymb.empty) (clauses_to_dsmt P Σ).
 
 Definition config_to_dsmt (J : config) : dstring :=
   let (AA, _) := J in 
