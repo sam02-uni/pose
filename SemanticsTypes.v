@@ -48,6 +48,11 @@ Definition H0 : heap := MapRefC.empty object.
 (* The empty path condition *)
 Definition Σ0 : path_condition := [].
 
+(* The initial configuration of an execution *)
+Definition config_initial (P : s_prg) : config :=
+  let e0 := expression P in
+  (P, H0, Σ0, e0).
+
 (**************** Related functions and predicates **************)
 
 (* Object getters *)

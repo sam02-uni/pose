@@ -565,8 +565,7 @@ Let CoFixpoint do_compute (Js : list config) : computation :=
   Cons Js (do_compute (concat (List.map step_c Js))).
 
 Definition compute (P : s_prg) : computation :=
-  let e0 := expression P in
-  let J0 := (P, H0, Σ0, e0) in
+  let J0 := config_initial P in
   do_compute [J0].
 
 End ComputeDefs.
