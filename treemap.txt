@@ -276,7 +276,7 @@ class TreeMap extends Object {
 }
 
 let t := Y0 in
-let foo := (t.depthBound := 2) in
+let foo := (t.depthBound := 1) in
 let pPut := new PutParameters in
 let foo1 := (pPut.v := new Object) in
 let foo2 := (pPut.k := X0) in
