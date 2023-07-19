@@ -3,6 +3,7 @@ From Coq Require Import extraction.ExtrOcamlBasic.
 From Coq Require Import extraction.ExtrOcamlIntConv.
 From Coq Require Import extraction.ExtrOcamlNativeString.
 From POSE Require Import Syntax.
+From POSE Require Import SemanticsTypes.
 From POSE Require Import Interp.
 From POSE Require Import Parse.
 From POSE Require Import Prettyprint.
