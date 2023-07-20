@@ -54,7 +54,7 @@ Module SSymb_as_MDT <:  MiniDecidableType.
       * assert ({n = n0} + {n <> n0}) by apply Nat.eq_dec. assert ({l = l0} + {l <> l0}) by apply ListString_as_MDT.eq_dec. sauto.
   Defined.
 End SSymb_as_MDT.
-
+  
 Module RefC_as_MDT <: MiniDecidableType.
   Definition t := s_ref_c.
 
@@ -144,6 +144,44 @@ Module SSymb_as_DT <: DecidableTypeOrig'.
 End SSymb_as_DT.
 
 Module SetSymb := MSetWeakList.Make(SSymb_as_DT).
+
+Module Loc_as_DT <: DecidableTypeOrig'.
+  Definition t := s_loc.
+  Definition eq := @eq s_loc.
+  
+  Theorem eq_dec : forall l1 l2 : s_loc, { l1 = l2 } + { l1 <> l2 }.
+  Proof.
+    intro l1. induction l1. intro l2. destruct l2. assert ({n = n0} + {n <> n0}) by apply Nat.eq_dec. sauto.
+  Defined.
+
+  Theorem eq_equiv : Equivalence eq.
+  Proof.
+    split. congruence. congruence. congruence.
+  Defined.
+
+  Theorem eq_refl : forall l : s_loc, l = l.
+  Proof.
+    split. 
+  Defined.
+
+  Theorem eq_sym : forall l1 l2 : s_loc, l1 = l2 -> l2 = l1.
+  Proof.
+    intros. destruct l1.
+    - destruct l2.
+      * inversion H. tauto.
+  Defined.
+
+  Theorem eq_trans : forall l1 l2 l3 : s_loc, l1 = l2 -> l2 = l3 -> l1 = l3.
+  Proof.
+    intros. destruct l1.
+    - destruct l2.
+      * destruct l3.
+        -- inversion H. inversion H0. tauto.
+  Defined.
+        
+End Loc_as_DT.
+
+Module SetLoc := MSetWeakList.Make(Loc_as_DT).
 
 (* Difference strings *)
 Definition dstring := list string.

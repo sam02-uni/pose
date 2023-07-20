@@ -1,0 +1,147 @@
+open Pose
+
+let filename_src = ref ""
+let z3 = ref "/usr/local/bin/z3"
+
+let rec nat_of_int n =
+  if n = 0 then O else S (nat_of_int (n - 1))
+
+let read_whole_file filename =
+  (* open_in_bin works correctly on Unix and Windows *)
+  let ch = open_in_bin filename in
+  let s = really_input_string ch (in_channel_length ch) in
+  close_in ch;
+  s
+
+let src () = read_whole_file !filename_src
+
+let rec output_dstring ch ds =
+  match ds with
+  | [] -> output_string ch ""
+  | s :: ds2 -> let _ = output_string ch s in
+                output_dstring ch ds2
+
+let write_whole_file filename ds =
+  (* open_out_bin works correctly on Unix and Windows (???) *)
+  let ch = open_out_bin filename in
+  output_dstring ch ds;
+  output_string ch "(check-sat)\n";
+  close_out ch
+
+let rec print_dstring_endline ds =
+  match ds with
+  | [] -> print_endline ""
+  | s :: ds2 -> let _ = print_string s in
+                print_dstring_endline ds2
+
+let print_dstrings_endline dss =
+  let _ = map (fun ds -> let _ = print_dstring_endline ds in print_endline "\n=========\n") dss in ()
+
+let config_at n =
+match (parse (src ())) with
+  | (_, SomeE p) -> print_dstrings_endline (step_to_dstr (step_at p (nat_of_int n)))
+  | _ -> print_endline "parsing error"
+
+let count_at n =
+  match (parse (src ())) with
+  | (_, SomeE p) -> print_endline (string_of_int (List.length (step_at p (nat_of_int n))))
+  | _ -> print_endline "parsing error"
+
+let smt_at n =
+match (parse (src ())) with
+  | (_, SomeE p) -> print_dstrings_endline (step_to_dsmt (step_at p (nat_of_int n)))
+  | _ -> print_endline "parsing error"
+
+let save_to_file dsmt = write_whole_file "in.smt" dsmt
+
+let run_z3 () = let _ = Sys.command (!z3 ^ " -smt2 in.smt >out.txt") in ()
+
+let read_result () =
+  let s = read_whole_file "out.txt" in
+  ((String.sub s 0 3) = "uns")
+
+let rec filter_configs jss =
+  match jss with
+  | [] -> []
+  | j :: jss' ->
+    let dsmt = config_to_dsmt j in
+    (save_to_file dsmt ;
+    run_z3 () ;
+    let unsat = read_result () in
+    if unsat then filter_configs jss'
+    else j :: (filter_configs jss'))
+
+let step_at_prune p n  =
+  let j0 = config_initial p in
+  let js = ref [j0] in
+  let width = ref (length !js) in
+  for depth = 1 to n do
+    js := List.concat (map step_c !js) ;
+    if !width < length !js then
+      js := (filter_configs !js) ;
+    width := length !js
+  done ;
+  !js
+
+let config_at_prune n =
+match (parse (src ())) with
+  | (_, SomeE p) -> print_dstrings_endline (step_to_dstr (step_at_prune p n))
+  | _ -> print_endline "parsing error"
+
+let smt_at_prune n =
+match (parse (src ())) with
+  | (_, SomeE p) -> print_dstrings_endline (step_to_dsmt (step_at_prune p n))
+  | _ -> print_endline "parsing error"
+
+let count_at_prune n =
+match (parse (src ())) with
+  | (_, SomeE p) -> print_endline (string_of_int (List.length (step_at_prune p n)))
+  | _ -> print_endline "parsing error"
+
+type t_to_print =
+| Configs
+| Count
+| Smt
+
+let () =
+  let depth = ref 0 in
+  let prune = ref false in
+  let to_print = ref Configs in
+  let next_z3 = ref false in
+  let next_depth = ref false in
+  let help = ref false in
+  
+  for i = 1 to Array.length Sys.argv - 1 do
+    if !next_z3 then 
+      (z3 := Sys.argv.(i);
+      next_z3 := false)
+    else if !next_depth then
+      (depth := int_of_string Sys.argv.(i);
+      next_depth := false)
+    else if Sys.argv.(i) = "-z3" then
+      next_z3 := true
+    else if Sys.argv.(i) = "-c" then
+      to_print := Count
+    else if Sys.argv.(i) = "-s" then
+      to_print := Smt
+    else if Sys.argv.(i) = "-p" then
+      prune := true
+    else if Sys.argv.(i) = "-?" then
+      help := true
+    else if Sys.argv.(i) = "-h" then
+      help := true
+    else
+      (filename_src := Sys.argv.(i);
+      next_depth := true)
+  done;
+  if !help then
+    (print_endline ("Usage: " ^ Sys.argv.(0) ^ " [-c|-s] -p -z <z3_path> source depth");
+    print_endline "  -c: prints count of states";
+    print_endline "  -s: prints smtlib of path condition";
+    print_endline "  -p: prunes infeasible with Z3";
+    print_endline "  -z <z3_path>: specifies the path of the Z3 executable (default: /usr/local/bin/z3)")
+  else
+  match !to_print with
+  | Configs -> if !prune then (config_at_prune !depth) else (config_at !depth)
+  | Count -> if !prune then (count_at_prune !depth) else (count_at !depth)
+  | Smt -> if !prune then (smt_at_prune !depth) else (smt_at !depth)

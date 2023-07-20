@@ -61,11 +61,11 @@ Definition type_to_dsmt (t : s_ty) : dstring :=
   match t with
   | s_ty_bool => from_string "Bool"
   | s_ty_int => from_string "Int"
-  | s_ty_class _ => from_string "SRef"
+  | s_ty_class _ => from_string "Ref"
   end.
 
 Definition field_to_dsmt (F : s_dc_v) : dstring :=
-  append (append (append (append (append (append (append (append (append (from_string "(declare-fun ") (from_string (field_name F))) (from_string " (SRef) ")) (type_to_dsmt (field_type F))) (from_string ")")) LF) (from_string (if (is_type_primitive (field_type F)) then "(assert (= 0 (" else "(assert (= _null ("))) (from_string (field_name F))) (from_string " _null)))")) LF.
+  append (append (append (append (append (append (append (append (append (from_string "(declare-fun ") (from_string (field_name F))) (from_string " (Ref) ")) (type_to_dsmt (field_type F))) (from_string ")")) LF) (from_string (if (is_type_primitive (field_type F)) then "(assert (= 0 (" else "(assert (= _null ("))) (from_string (field_name F))) (from_string " _null)))")) LF.
 
 Definition class_to_dsmt (P : s_prg) (C : s_dc_c) : dstring :=
   append (append (append (append (append (append (from_string "(define-fun ") (from_string (class_name C))) (from_string " () SCl ")) (list_nat_to_dsmt (class_to_list P C))) (from_string ")")) LF) (dconcat (from_string "") (List.map field_to_dsmt (fields C))).
@@ -76,9 +76,9 @@ Definition smt_decls (P : s_prg) : dstring :=
   (from_string "(define-sort SCl () (List Int)) ;the sort of classes") LF) 
   (from_string "(define-fun-rec subclass ((x SCl) (y SCl)) Bool")) LF) 
   (from_string "(ite (= y nil) true (ite (= x nil) false (ite (= (head x) (head y)) (subclass (tail x) (tail y)) false))))")) LF) 
-  (from_string "(declare-sort SRef) ;the sort of references")) LF) 
-  (from_string "(declare-fun classOf (SRef) SCl)")) LF) 
-  (from_string "(declare-fun _null () SRef)")) LF) 
+  (from_string "(declare-sort Ref) ;the sort of references")) LF) 
+  (from_string "(declare-fun classOf (Ref) SCl)")) LF) 
+  (from_string "(declare-fun _null () Ref)")) LF) 
   (dconcat (from_string "") (List.map (class_to_dsmt P) (classes P))).
 
 Fixpoint value_to_dsmt (σ : s_val) : dstring :=
@@ -161,7 +161,6 @@ Fixpoint add_vars_ref (P : s_prg) (σ : s_val) (ssRef : SetSymb.t) : SetSymb.t :
     | s_ref_c_symb s => SetSymb.add s ssRef
     | _ => ssRef
     end
-  | s_val_lt σ1 σ2 => add_vars_ref P σ2 (add_vars_ref P σ1 ssRef)
   | s_val_eq σ1 σ2 => add_vars_ref P σ2 (add_vars_ref P σ1 ssRef)
   | s_val_subtype σ t => add_vars_ref P σ ssRef
   | s_val_field s1 f s2 => (match class_with_field P f with
@@ -181,20 +180,33 @@ Fixpoint add_vars_ref (P : s_prg) (σ : s_val) (ssRef : SetSymb.t) : SetSymb.t :
   | _ => ssRef
   end.
 
-Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ssPrim : SetSymb.t) (ssRef : SetSymb.t) : dstring :=
+Fixpoint add_vars_loc (P : s_prg) (σ : s_val) (ssLoc : SetLoc.t) : SetLoc.t :=
+  match σ with
+  | s_val_ref_c u => match u with
+    | s_ref_c_loc l => SetLoc.add l ssLoc
+    | _ => ssLoc
+    end
+  | s_val_eq σ1 σ2 => add_vars_loc P σ2 (add_vars_loc P σ1 ssLoc)
+  | s_val_subtype σ t => add_vars_loc P σ ssLoc
+  | s_val_ite σ1 σ2 σ3 => add_vars_loc P σ3 (add_vars_loc P σ2 (add_vars_loc P σ1 ssLoc))
+  | _ => ssLoc
+  end.
+
+Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ssPrim ssRef : SetSymb.t) (ssLoc : SetLoc.t) : dstring :=
   match σ with
   | s_val_prim_c p => match p with
     | s_prim_c_symb s => if SetSymb.mem s ssPrim then (from_string "") else append (append (append (from_string "(declare-fun ") (prim_c_to_dstr (s_prim_c_symb s))) (from_string " () Int)")) LF
     | _ => from_string ""
     end
   | s_val_ref_c u => match u with
-    | s_ref_c_symb s => if SetSymb.mem s ssRef then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s))) (from_string " () SRef)")) LF
+    | s_ref_c_symb s => if SetSymb.mem s ssRef then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s))) (from_string " () Ref)")) LF
+    | s_ref_c_loc l => if SetLoc.mem l ssLoc then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_loc l))) (from_string " () Ref)")) LF
     | _ => from_string ""
     end
-  | s_val_lt σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef))
-  | s_val_eq σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef))
-  | s_val_subtype σ t => declare_vars_clause P σ ssPrim ssRef
-  | s_val_field s1 f s2 => append (if SetSymb.mem s1 ssRef then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s1))) (from_string " () SRef)")) LF) (match class_with_field P f with
+  | s_val_lt σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))
+  | s_val_eq σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))
+  | s_val_subtype σ t => declare_vars_clause P σ ssPrim ssRef ssLoc
+  | s_val_field s1 f s2 => append (if SetSymb.mem s1 ssRef then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s1))) (from_string " () Ref)")) LF) (match class_with_field P f with
         | Some C =>
           match fdecl C f with
           | Some F =>              
@@ -204,26 +216,26 @@ Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ssPrim : SetSymb.t) (ssRe
               append (append (append (from_string "(declare-fun ") (prim_c_to_dstr (s_prim_c_symb s2))) (from_string " () Int)")) LF)
             else
               (if SetSymb.mem s2 ssRef then (from_string "") else
-              append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s2))) (from_string " () SRef)")) LF)
+              append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s2))) (from_string " () Ref)")) LF)
           | _ => from_string "" (* error (internal): class C' has no field f *)
           end         
         | _ => from_string "" (* error: no class exists with field f *)
         end)
-  | s_val_ite σ1 σ2 σ3 => append (append (declare_vars_clause P σ1 ssPrim ssRef) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef))) (declare_vars_clause P σ3 (add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim)) (add_vars_ref P σ2 (add_vars_ref P σ1 ssRef)))
+  | s_val_ite σ1 σ2 σ3 => append (append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))) (declare_vars_clause P σ3 (add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim)) (add_vars_ref P σ2 (add_vars_ref P σ1 ssRef)) (add_vars_loc P σ2 (add_vars_loc P σ1 ssLoc)))
   | _ => from_string ""
   end.
 
-Fixpoint declare_vars (P : s_prg) (Σ : path_condition) (ssPrim ssRef : SetSymb.t) : dstring :=
+Fixpoint declare_vars (P : s_prg) (Σ : path_condition) (ssPrim ssRef : SetSymb.t) (ssLoc : SetLoc.t) : dstring :=
   match Σ with
   | [] => from_string ""
   | cl :: Σ' => match cl with
-    | clause_pos σ => append (declare_vars_clause P σ ssPrim ssRef) (declare_vars P Σ' (add_vars_prim P σ ssPrim) (add_vars_ref P σ ssRef))
-    | clause_neg σ => append (declare_vars_clause P σ ssPrim ssRef) (declare_vars P Σ' (add_vars_prim P σ ssPrim) (add_vars_ref P σ ssRef))
+    | clause_pos σ => append (declare_vars_clause P σ ssPrim ssRef ssLoc) (declare_vars P Σ' (add_vars_prim P σ ssPrim) (add_vars_ref P σ ssRef) (add_vars_loc P σ ssLoc))
+    | clause_neg σ => append (declare_vars_clause P σ ssPrim ssRef ssLoc) (declare_vars P Σ' (add_vars_prim P σ ssPrim) (add_vars_ref P σ ssRef) (add_vars_loc P σ ssLoc))
     end
   end.
 
 Definition path_condition_to_dsmt (P : s_prg) (Σ : path_condition) : dstring :=
-  append (declare_vars P Σ SetSymb.empty SetSymb.empty) (clauses_to_dsmt P Σ).
+  append (declare_vars P Σ SetSymb.empty SetSymb.empty SetLoc.empty) (clauses_to_dsmt P Σ).
 
 Definition config_to_dsmt (J : config) : dstring :=
   let (AA, _) := J in 
