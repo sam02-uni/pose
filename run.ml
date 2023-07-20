@@ -37,7 +37,7 @@ let rec print_dstring_endline ds =
 let print_dstrings_endline dss =
   let _ = map (fun ds -> let _ = print_dstring_endline ds in print_endline "\n=========\n") dss in ()
 
-let config_at n =
+let configs_at n =
 match (parse (src ())) with
   | (_, SomeE p) -> print_dstrings_endline (step_to_dstr (step_at p (nat_of_int n)))
   | _ -> print_endline "parsing error"
@@ -51,6 +51,31 @@ let smt_at n =
 match (parse (src ())) with
   | (_, SomeE p) -> print_dstrings_endline (step_to_dsmt (step_at p (nat_of_int n)))
   | _ -> print_endline "parsing error"
+
+(* Returns the leaves gathered up to depth n. *)
+let rec leaves_at p n =
+  if n = 0 then [] else
+  let ls = leaves_at p (n - 1) in
+  let js = step_at p (nat_of_int n) in
+  let lsNew = filter (fun j -> is_leaf j) js in
+  ls @ lsNew
+
+let lconfigs_at n =
+match (parse (src ())) with
+  | (_, SomeE p) -> print_dstrings_endline (step_to_dstr (leaves_at p n))
+  | _ -> print_endline "parsing error"
+
+let lcount_at n =
+  match (parse (src ())) with
+  | (_, SomeE p) -> print_endline (string_of_int (List.length (leaves_at p n)))
+  | _ -> print_endline "parsing error"
+
+let lsmt_at n =
+match (parse (src ())) with
+  | (_, SomeE p) -> print_dstrings_endline (step_to_dsmt (leaves_at p n))
+  | _ -> print_endline "parsing error"
+
+(*** Pruning with Z3 ***)
 
 let save_to_file dsmt = write_whole_file "in.smt" dsmt
 
@@ -83,20 +108,67 @@ let step_at_prune p n  =
   done ;
   !js
 
-let config_at_prune n =
+(* Returns the final configurations at depth n. Performs
+   pruning with Z3. *)
+let configs_at_prune n =
 match (parse (src ())) with
   | (_, SomeE p) -> print_dstrings_endline (step_to_dstr (step_at_prune p n))
   | _ -> print_endline "parsing error"
 
+(* Returns the SMTLIB of the path condition of the final
+   configurations at depth n. Performs pruning with Z3. *)
 let smt_at_prune n =
 match (parse (src ())) with
   | (_, SomeE p) -> print_dstrings_endline (step_to_dsmt (step_at_prune p n))
   | _ -> print_endline "parsing error"
 
+(* Returns the number of final configurations at depth n.
+   Performs pruning with Z3. *)
 let count_at_prune n =
 match (parse (src ())) with
   | (_, SomeE p) -> print_endline (string_of_int (List.length (step_at_prune p n)))
   | _ -> print_endline "parsing error"
+
+(* Returns the leaves gathered up to depth n. Performs
+   pruning with Z3. *)
+let leaves_at_prune p n  =
+  let j0 = config_initial p in
+  let js = ref [j0] in
+  let ls = ref [] in
+  let width = ref (length !js) in
+  for depth = 1 to n do
+    let nx = (map step_c !js) in
+    let lsNew = List.filteri (fun i _ -> (List.length (List.nth nx i)) = 0) !js in 
+    js := List.concat nx;
+    if !width < length !js then
+      js := (filter_configs !js) ;
+    width := length !js ;
+    ls := !ls @ lsNew
+  done ;
+  !ls
+
+(* Returns the final configurations at depth n. Performs
+   pruning with Z3. *)
+let lconfigs_at_prune n =
+match (parse (src ())) with
+  | (_, SomeE p) -> print_dstrings_endline (step_to_dstr (leaves_at_prune p n))
+  | _ -> print_endline "parsing error"
+
+(* Returns the SMTLIB of the path condition of the final
+   configurations at depth n. Performs pruning with Z3. *)
+let lsmt_at_prune n =
+match (parse (src ())) with
+  | (_, SomeE p) -> print_dstrings_endline (step_to_dsmt (leaves_at_prune p n))
+  | _ -> print_endline "parsing error"
+
+(* Returns the number of final configurations at depth n.
+   Performs pruning with Z3. *)
+let lcount_at_prune n =
+match (parse (src ())) with
+  | (_, SomeE p) -> print_endline (string_of_int (List.length (leaves_at_prune p n)))
+  | _ -> print_endline "parsing error"
+
+(*** Entry point ***)
 
 type t_to_print =
 | Configs
@@ -106,6 +178,7 @@ type t_to_print =
 let () =
   let depth = ref 0 in
   let prune = ref false in
+  let leaves = ref false in
   let to_print = ref Configs in
   let next_z3 = ref false in
   let next_depth = ref false in
@@ -126,8 +199,8 @@ let () =
       to_print := Smt
     else if Sys.argv.(i) = "-p" then
       prune := true
-    else if Sys.argv.(i) = "-?" then
-      help := true
+    else if Sys.argv.(i) = "-l" then
+      leaves := true
     else if Sys.argv.(i) = "-h" then
       help := true
     else
@@ -135,13 +208,19 @@ let () =
       next_depth := true)
   done;
   if !help then
-    (print_endline ("Usage: " ^ Sys.argv.(0) ^ " [-c|-s] -p -z <z3_path> source depth");
-    print_endline "  -c: prints count of states";
+    (print_endline ("Usage: " ^ Sys.argv.(0) ^ " [-c|-s] [-l] [-p] [-z <z3_path>] source depth");
+    print_endline "  -c: prints count of configs";
     print_endline "  -s: prints smtlib of path condition";
+    print_endline "  -l: considers leaves instead of configs at depth";
     print_endline "  -p: prunes infeasible with Z3";
     print_endline "  -z <z3_path>: specifies the path of the Z3 executable (default: /usr/local/bin/z3)")
+  else if !leaves then
+  match !to_print with
+  | Configs -> if !prune then (lconfigs_at_prune !depth) else (lconfigs_at !depth)
+  | Count -> if !prune then (lcount_at_prune !depth) else (lcount_at !depth)
+  | Smt -> if !prune then (lsmt_at_prune !depth) else (lsmt_at !depth)
   else
   match !to_print with
-  | Configs -> if !prune then (config_at_prune !depth) else (config_at !depth)
+  | Configs -> if !prune then (configs_at_prune !depth) else (configs_at !depth)
   | Count -> if !prune then (count_at_prune !depth) else (count_at !depth)
   | Smt -> if !prune then (smt_at_prune !depth) else (smt_at !depth)

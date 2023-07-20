@@ -564,6 +564,12 @@ Definition step_c (J : config) : list config :=
   | Some (H', Σ') => cstep_c (P, H', Σ', e)
   end.
 
+Definition is_leaf (J : config) : bool :=
+  match step_c J with
+  | [] => true
+  | _ => false
+  end.
+
 End StepDefs.
 
 (************ Full computation of a program ************)
