@@ -71,6 +71,8 @@ Inductive s_val : Type :=
 | s_val_ref_c : s_ref_c -> s_val
 (* A symbolic term for an addition operation *)
 | s_val_add : s_val -> s_val -> s_val
+(* A symbolic term for a subtraction operation *)
+| s_val_sub : s_val -> s_val -> s_val
 (* A symbolic term for a less-than relation *)
 | s_val_lt : s_val -> s_val -> s_val
 (* A symbolic term for an equality relation *)
@@ -103,6 +105,8 @@ Inductive s_expr : Type :=
 | s_expr_let : string -> s_expr -> s_expr -> s_expr
 (* Addition of two expressions *)
 | s_expr_add : s_expr -> s_expr -> s_expr
+(* Subtraction of two expressions *)
+| s_expr_sub : s_expr -> s_expr -> s_expr
 (* Less-than comparison of two expressions *)
 | s_expr_lt : s_expr -> s_expr -> s_expr
 (* Equality of two expressions *)
@@ -276,6 +280,7 @@ Fixpoint is_reference (σ : s_val) : bool :=
   | s_val_prim_c _ => false
   | s_val_ref_c  _ => true 
   | s_val_add _ _ => false
+  | s_val_sub _ _ => false
   | s_val_lt _ _ => false
   | s_val_eq _ _ => false
   | s_val_subtype _ _ => false
@@ -302,6 +307,7 @@ Fixpoint repl_var (e : s_expr) (x : string) (e' : s_expr) : s_expr :=
   | s_expr_putfield e1 f e2 => s_expr_putfield (repl_var e1 x e') f (repl_var e2 x e')
   | s_expr_let x' e1 e2 => if (String.eqb x x') then (s_expr_let x' e1 e2) else (s_expr_let x' (repl_var e1 x e') (repl_var e2 x e'))
   | s_expr_add e1 e2 => s_expr_add (repl_var e1 x e') (repl_var e2 x e')
+  | s_expr_sub e1 e2 => s_expr_sub (repl_var e1 x e') (repl_var e2 x e')
   | s_expr_lt e1 e2 => s_expr_lt (repl_var e1 x e') (repl_var e2 x e')
   | s_expr_eq e1 e2 => s_expr_eq (repl_var e1 x e') (repl_var e2 x e')
   | s_expr_instanceof e1 c => s_expr_instanceof (repl_var e1 x e') c

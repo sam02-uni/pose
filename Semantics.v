@@ -231,6 +231,15 @@ Inductive cstep : config -> config -> Prop :=
   (σ1 <> s_val_prim_c (s_prim_c_int (s_int_l n)) \/ σ2 <> s_val_prim_c (s_prim_c_int (s_int_l n))) ->
   e' = s_expr_val (s_val_add σ1 σ2) ->
   (P, H, S, e) --> (P, H, S, e')
+| CStepSub1 : forall P H S e n1 n2 e',
+  e = s_expr_sub (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n1)))) (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n2)))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l (n1 - n2)))) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepSub2 : forall P H S e e' n σ1 σ2,
+  e = s_expr_sub (s_expr_val σ1) (s_expr_val σ2) ->
+  (σ1 <> s_val_prim_c (s_prim_c_int (s_int_l n)) \/ σ2 <> s_val_prim_c (s_prim_c_int (s_int_l n))) ->
+  e' = s_expr_val (s_val_sub σ1 σ2) ->
+  (P, H, S, e) --> (P, H, S, e')
 | CStepLt1 : forall P H S e n1 n2 e',
   e = s_expr_lt (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n1)))) (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n2)))) ->
   e' = s_expr_val (s_val_prim_c (s_prim_c_bool (if Nat.ltb n1 n2 then s_bool_true else s_bool_false))) ->
@@ -292,7 +301,7 @@ Inductive cstep : config -> config -> Prop :=
   e = s_expr_eq (s_expr_val (s_val_ite σ1 σ2 σ3)) (s_expr_val (s_val_ref_c (s_ref_c_loc l))) ->
   e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) ->
   (P, H, S, e) --> (P, H, S, e')
-| CStepEq__ : forall P H S e e' n b l s σ1 σ2 σ3 σ4 σ5,
+| CStepEq14 : forall P H S e e' n b l s σ1 σ2 σ3 σ4 σ5,
   e = s_expr_eq (s_expr_val σ1) (s_expr_val σ2) ->
   ((σ1 <> s_val_prim_c (s_prim_c_int (s_int_l n)) /\ σ1 <> s_val_prim_c (s_prim_c_bool b) /\
   σ1 <> s_val_ref_c s_ref_c_null /\ σ1 <> s_val_ref_c (s_ref_c_loc (s_loc_l n))) \/
@@ -394,6 +403,12 @@ Inductive cstep : config -> config -> Prop :=
 | CStepCtxAdd2 : forall P H H' S S' e e' σ,
   (P, H, S, e) --> (P, H', S', e') ->  
   (P, H, S, s_expr_add (s_expr_val σ) e) --> (P, H', S', s_expr_add (s_expr_val σ) e')
+| CStepCtxSub1 : forall P H H' S S' e e' e1,
+  (P, H, S, e) --> (P, H', S', e') ->  
+  (P, H, S, s_expr_sub e e1) --> (P, H', S', s_expr_sub e' e1)
+| CStepCtxSub2 : forall P H H' S S' e e' σ,
+  (P, H, S, e) --> (P, H', S', e') ->  
+  (P, H, S, s_expr_sub (s_expr_val σ) e) --> (P, H', S', s_expr_sub (s_expr_val σ) e')
 | CStepCtxLt1 : forall P H H' S S' e e' e1,
   (P, H, S, e) --> (P, H', S', e') ->
   (P, H, S, s_expr_lt e e1) --> (P, H', S', s_expr_lt e' e1)

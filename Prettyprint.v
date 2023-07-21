@@ -90,6 +90,7 @@ Fixpoint val_to_dstr (σ : s_val) : dstring :=
   | s_val_prim_c p => prim_c_to_dstr p
   | s_val_ref_c u => ref_c_to_dstr u
   | s_val_add σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " + ")) (val_to_dstr σ2)) (from_string ")")
+  | s_val_sub σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " - ")) (val_to_dstr σ2)) (from_string ")")
   | s_val_lt σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " < ")) (val_to_dstr σ2)) (from_string ")")
   | s_val_eq σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " = ")) (val_to_dstr σ2)) (from_string ")")
   | s_val_subtype σ t => append (append (append (append (from_string "(") (val_to_dstr σ)) (from_string " <: ")) (ty_to_dstr t)) (from_string ")")
@@ -106,6 +107,7 @@ Fixpoint expr_to_dstr (e : s_expr) : dstring :=
   | s_expr_putfield e1 fname e2 => append (append (append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string ".")) (from_string fname)) (from_string " := ")) (expr_to_dstr e2)) (from_string ")")
   | s_expr_let x e1 e2 => append (append (append (append (append (from_string "let ") (from_string x)) (from_string " := ")) (expr_to_dstr e1)) (from_string " in ")) (expr_to_dstr e2)
   | s_expr_add e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " + ")) (expr_to_dstr e2)) (from_string ")")
+  | s_expr_sub e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " - ")) (expr_to_dstr e2)) (from_string ")")
   | s_expr_lt e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " < ")) (expr_to_dstr e2)) (from_string ")")
   | s_expr_eq e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " = ")) (expr_to_dstr e2)) (from_string ")")
   | s_expr_instanceof e1 c =>  append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " instanceof ")) (from_string c)) (from_string ")")

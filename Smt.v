@@ -86,6 +86,7 @@ Fixpoint value_to_dsmt (σ : s_val) : dstring :=
   | s_val_prim_c p => prim_c_to_dstr p
   | s_val_ref_c u => ref_c_to_dsmt u
   | s_val_add σ1 σ2 => append (append (append (append (from_string "(+ ") (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string ")")
+  | s_val_sub σ1 σ2 => append (append (append (append (from_string "(- ") (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string ")")
   | s_val_lt σ1 σ2 => append (append (append (append (from_string "(< ") (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string ")")
   | s_val_eq σ1 σ2 => append (append (append (append (from_string "(= ") (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string ")")
   | s_val_ite σ1 σ2 σ3 => append (append (append (append (append (append (from_string "(ite ") (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string " ")) (value_to_dsmt σ3)) (from_string ")")
@@ -135,9 +136,10 @@ Fixpoint add_vars_prim (P : s_prg) (σ : s_val) (ssPrim : SetSymb.t) : SetSymb.t
     | s_prim_c_symb s => SetSymb.add s ssPrim
     | _ => ssPrim
     end
+  | s_val_add σ1 σ2 => add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim) 
+  | s_val_sub σ1 σ2 => add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim) 
   | s_val_lt σ1 σ2 => add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim) 
   | s_val_eq σ1 σ2 => add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim)
-  | s_val_subtype σ t => add_vars_prim P σ ssPrim
   | s_val_field s1 f s2 => (match class_with_field P f with
         | Some C =>
           match fdecl C f with
@@ -203,6 +205,8 @@ Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ssPrim ssRef : SetSymb.t)
     | s_ref_c_loc l => if SetLoc.mem l ssLoc then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_loc l))) (from_string " () Ref)")) LF
     | _ => from_string ""
     end
+  | s_val_add σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))
+  | s_val_sub σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))
   | s_val_lt σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))
   | s_val_eq σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))
   | s_val_subtype σ t => declare_vars_clause P σ ssPrim ssRef ssLoc

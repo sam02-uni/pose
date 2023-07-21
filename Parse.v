@@ -256,6 +256,11 @@ Fixpoint expr (n : nat) : parser s_expr :=
         fun y => ' ")"          ==> (fun _ => s_expr_add x y))        <|>
       (' "(" <*>
         fun _ => expr n' <*>
+        fun x => ' "-" <*>
+        fun _ => expr n' <*>
+        fun y => ' ")"          ==> (fun _ => s_expr_sub x y))        <|>
+      (' "(" <*>
+        fun _ => expr n' <*>
         fun x => ' "<" <*>
         fun _ => expr n' <*>
         fun y => ' ")"          ==> (fun _ => s_expr_lt x y))        <|>
