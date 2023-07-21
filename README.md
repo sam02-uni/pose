@@ -30,9 +30,10 @@ The grammar of the language is reported in Parse.v, that implements a LL parser 
 
 For what concerns the examples included in the repo here are some stats (with pruning on):
 
+* avl: maximum depth 223, leaves 57;
 * dll: maximum depth 143, leaves 3;
-* treemap: maximum depth 336, leaves 48;
-* avl: maximum depth 223, leaves 57.
+* ncll: maximum depth 68, leaves 2.
+* treemap: maximum depth 336, leaves 48.
 
 Note that if you the run tool with option -l to produce all the leaves you must provide a depth that is at least one more than the maximum depth; otherwise, it will produce the leaves encountered up to depth - 1.
 
