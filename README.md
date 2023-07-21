@@ -9,17 +9,15 @@ You can find some examples in the Examples.v file. Process it row by row in your
     $ ocamlopt pose.mli
     $ ocamlopt -o run pose.ml run.ml
 
-You will find a run executable, with a sketchy help that you can read by issuing the command
+This emits a run executable; The executable has a sketchy help that you can read by issuing the command
 
     $ ./run -h
 
-A possible execution of the tool is:
+A possible execution of the tool is
 
     $ ./run -p -z3 /usr/bin/z3 dll.txt 100
 
-It will run the dll.txt example up to depth 100, by pruning the infeasible states using Z3 (option -p), where the Z3 executable is installed at /usr/bin. The run will print the configurations (current program, heap, path condition and expression under evaluation) reached after 100 execution steps.
-
-Note that this prototype is underoptimized, and consequently slow and memory-consuming. If its execution crashes with a stack overflow error, crank up the stack memory with the Unix command ulimit -s. Expect in any case execution times to suddenly explode when states start to become big, which usually happens at high depths. I optimized to have decent time with the experiments in this repo, but on other programs your mileage may vary.
+It runs the dll.txt example up to depth 100, by pruning the infeasible states using Z3 (option -p), where the Z3 executable is installed at /usr/bin. The run will print the configurations (current program, heap, path condition and expression under evaluation) reached after 100 execution steps.
 
 Some notes on the small programming language that you must use to write the programs you want to symbolically execute with this prototype. It comes with some limitations, that you can work around as follows:
 
@@ -37,4 +35,6 @@ For what concerns the examples included in the repo here are some stats (with pr
 * avl: maximum depth 223, leaves 57.
 
 Note that if you the run tool with option -l to produce all the leaves you must provide a depth that is at least one more than the maximum depth; otherwise, it will produce the leaves encountered up to depth - 1.
+
+A disclaimer: this tool is a prototype aimed at demonstrating the concept of POSE, not an application meant to run large-scale example. The tool is underoptimized, consequently slow and memory-consuming. If its execution crashes with a stack overflow error, crank up the stack memory with the Unix command ulimit -s. Expect in any case execution times to suddenly explode when states start to become big, which usually happens at high depths. I optimized to have decent time with the experiments in this repo, but on other programs your mileage may vary.
 
