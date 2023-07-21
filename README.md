@@ -1,6 +1,6 @@
 # POSE: Path-optimal symbolic execution prototype
 
-This repository contains the prototype implementation of path-optimal symbolic execution. To compile and run it you need Coq, OCaml (that usually comes with Coq), make and Z3. Build the Coq files and extract the OCaml implementation by running
+This repository contains the prototype implementation of path-optimal symbolic execution. To compile and run it you need [Coq](https://coq.inria.fr/), [OCaml](https://ocaml.org/), usually coming with Coq, [make](https://www.gnu.org/software/make/) and [Z3](https://github.com/Z3Prover/z3). Build the Coq files and extract the OCaml implementation by running
 
     $ make
 
@@ -33,7 +33,8 @@ The grammar of the language is reported in Parse.v, that implements a LL parser 
 For what concerns the examples included in the repo here are some stats (with pruning on):
 
 * dll: maximum depth 143, leaves 3;
-* treemap: maximum depth 336, leaves 48.
+* treemap: maximum depth 336, leaves 48;
+* avl: maximum depth 223, leaves 57.
 
-Note that for the run tool to produce the exact count of the number of leaves you must provide it a depth that is at least one more than the maximum depth.
+Note that if you the run tool with option -l to produce all the leaves you must provide a depth that is at least one more than the maximum depth; otherwise, it will produce the leaves encountered up to depth - 1.
 
