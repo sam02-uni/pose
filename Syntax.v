@@ -80,7 +80,7 @@ Inductive s_val : Type :=
 (* A symbolic term for a subtype relation *)
 | s_val_subtype : s_val -> s_ty -> s_val
 (* A symbolic term for a field relation (i.e., 
-     Y.f = Z, with Y and F symbols  *)
+     Y.f = Z, with Y and Z symbols  *)
 | s_val_field : s_symb -> string -> s_symb -> s_val
 (* An if-then-else term *)
 | s_val_ite : s_val -> s_val -> s_val -> s_val.

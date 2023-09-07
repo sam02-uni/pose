@@ -54,9 +54,8 @@ Inductive rstep : config -> config -> Prop :=
   class_has_field C f ->
   fdecl C f = Some (s_dc_v_l t f) ->
   is_type_primitive t = true ->
-  assume_num H Y f = Some Z ->
+  assume_num H Y f σ Z ->
   Z = s_prim_c_symb s' ->
-  σ = s_val_prim_c Z ->
   o' = upd_obj o f σ ->
   H' = repl_obj H Y o' ->
   cl = clause_pos (s_val_field s f s') ->
@@ -70,7 +69,7 @@ Inductive rstep : config -> config -> Prop :=
   class_has_field C f ->
   fdecl C f = Some (s_dc_v_l t f) ->
   is_type_reference t = true ->
-  assume H Y f σ Z ->
+  assume_ref H Y f σ Z ->
   Z = s_ref_c_symb s' ->
   o' = upd_obj o f σ ->
   H' = repl_obj H Y o' ->

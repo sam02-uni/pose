@@ -122,9 +122,8 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
           | Some F =>              
             let t := field_type F in
             if is_type_primitive t then
-              match assume_num H Y f with
-              | Some (s_prim_c_symb s') =>
-                let σ := s_val_prim_c (s_prim_c_symb s') in
+              match assume_c_num H Y f with
+              | Some (σ, s_prim_c_symb s') =>
                 let o' := upd_obj o f σ in
                 let H' := repl_obj H Y o' in
                 let cl := clause_pos (s_val_field s f s') in
@@ -133,7 +132,7 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
               | _ => None
               end
             else
-              match assume_c H Y f with
+              match assume_c_ref H Y f with
               | Some (σ, s_ref_c_symb s') =>
                 let o' := upd_obj o f σ in
                 let H' := repl_obj H Y o' in

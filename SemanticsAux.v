@@ -34,7 +34,7 @@ Let Fixpoint assume_fp (Helts : list (s_ref_c * object)) (s : s_symb) (f : strin
   | _ :: other_Helts => assume_fp other_Helts s f σPart σ
   end.
 
-Definition assume (H : heap) (Y : s_ref_c) (f : string) (σ : s_val) (Z : s_ref_c) : Prop := 
+Definition assume_ref (H : heap) (Y : s_ref_c) (f : string) (σ : s_val) (Z : s_ref_c) : Prop := 
   match Y with
   | s_ref_c_symb s => if MapRefC.mem Y H then
     let s' := match s with
@@ -42,6 +42,18 @@ Definition assume (H : heap) (Y : s_ref_c) (f : string) (σ : s_val) (Z : s_ref_
               | s_symb_fld n l => s_symb_fld n (l ++ [f])
               end in                              
     Z = s_ref_c_symb s' /\ assume_fp (MapRefC.elements H) s f (s_val_ref_c Z) σ
+    else False
+  | _ => False
+  end.
+
+Definition assume_num (H : heap) (Y : s_ref_c) (f : string) (σ : s_val) (Z : s_prim_c) : Prop := 
+  match Y with
+  | s_ref_c_symb s => if MapRefC.mem Y H then
+    let s' := match s with
+              | s_symb_expr n => s_symb_fld n [f]
+              | s_symb_fld n l => s_symb_fld n (l ++ [f])
+              end in                              
+    Z = s_prim_c_symb s' /\ assume_fp (MapRefC.elements H) s f (s_val_prim_c Z) σ
     else False
   | _ => False
   end.
@@ -60,7 +72,7 @@ Let Fixpoint assume_c_fp (Helts : list (s_ref_c * object)) (s : s_symb) (f : str
   | _ :: other_Helts => assume_c_fp other_Helts s f σPart
   end.
 
-Definition assume_c (H : heap) (Y : s_ref_c) (f : string) : option (s_val * s_ref_c) := 
+Definition assume_c_ref (H : heap) (Y : s_ref_c) (f : string) : option (s_val * s_ref_c) := 
   match Y with
   | s_ref_c_symb s => if MapRefC.mem Y H then
     let s' := match s with
@@ -73,14 +85,16 @@ Definition assume_c (H : heap) (Y : s_ref_c) (f : string) : option (s_val * s_re
   | _ => None (* error: cannot assume over a concrete reference/object *)
   end.
 
-Definition assume_num (H : heap) (Y : s_ref_c) (f : string) : option s_prim_c :=
+Definition assume_c_num (H : heap) (Y : s_ref_c) (f : string) : option (s_val * s_prim_c) :=
   match Y with
   | s_ref_c_symb s => if MapRefC.mem Y H then
     let s' := match s with
               | s_symb_expr n => s_symb_fld n [f]
               | s_symb_fld n l => s_symb_fld n (l ++ [f])
               end in                              
-              Some (s_prim_c_symb s') else None
+    let Z := s_prim_c_symb s' in
+    option_map (fun σ => (σ, Z)) (assume_c_fp (MapRefC.elements H) s f (s_val_prim_c Z))
+    else None
   | _ => None (* error: cannot assume over a concrete reference/object *)
   end.
 
