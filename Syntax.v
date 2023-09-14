@@ -75,6 +75,12 @@ Inductive s_val : Type :=
 | s_val_sub : s_val -> s_val -> s_val
 (* A symbolic term for a less-than relation *)
 | s_val_lt : s_val -> s_val -> s_val
+(* A symbolic term for a logical and *)
+| s_val_and : s_val -> s_val -> s_val
+(* A symbolic term for a logical or *)
+| s_val_or : s_val -> s_val -> s_val
+(* A symbolic term for a logical not *)
+| s_val_not : s_val -> s_val
 (* A symbolic term for an equality relation *)
 | s_val_eq : s_val -> s_val -> s_val
 (* A symbolic term for a subtype relation *)
@@ -109,6 +115,12 @@ Inductive s_expr : Type :=
 | s_expr_sub : s_expr -> s_expr -> s_expr
 (* Less-than comparison of two expressions *)
 | s_expr_lt : s_expr -> s_expr -> s_expr
+(* Logical and of two expression *)
+| s_expr_and : s_expr -> s_expr -> s_expr
+(* Logical or of two expressions *)
+| s_expr_or : s_expr -> s_expr -> s_expr
+(* Logical not of an expression *)
+| s_expr_not : s_expr -> s_expr
 (* Equality of two expressions *)
 | s_expr_eq : s_expr -> s_expr -> s_expr
 (* Dynamic subclass check *)
@@ -252,6 +264,9 @@ Fixpoint s_val_eqb (σ1 σ2 : s_val) : bool :=
   | s_val_ref_c u1, s_val_ref_c u2 => s_ref_c_eqb u1 u2
   | s_val_add σ11 σ12, s_val_add σ21 σ22 => andb (s_val_eqb σ11 σ21) (s_val_eqb σ12 σ22)
   | s_val_lt σ11 σ12, s_val_lt σ21 σ22 => andb (s_val_eqb σ11 σ21) (s_val_eqb σ12 σ22)
+  | s_val_and σ11 σ12, s_val_and σ21 σ22 => andb (s_val_eqb σ11 σ21) (s_val_eqb σ12 σ22)
+  | s_val_or σ11 σ12, s_val_or σ21 σ22 => andb (s_val_eqb σ11 σ21) (s_val_eqb σ12 σ22)
+  | s_val_not σ1, s_val_not σ2 => s_val_eqb σ1 σ2
   | s_val_eq σ11 σ12, s_val_eq σ21 σ22 => andb (s_val_eqb σ11 σ21) (s_val_eqb σ12 σ22)
   | s_val_subtype σ11 t1, s_val_subtype σ21 t2 => andb (s_val_eqb σ11 σ21) (s_ty_eqb t1 t2)
   | s_val_field s11 f1 s12, s_val_field s21 f2 s22 => andb (s_symb_eqb s11 s21) (andb (String.eqb f1 f2) (s_symb_eqb s12 s22))
@@ -282,6 +297,9 @@ Fixpoint is_reference (σ : s_val) : bool :=
   | s_val_add _ _ => false
   | s_val_sub _ _ => false
   | s_val_lt _ _ => false
+  | s_val_and _ _ => false
+  | s_val_or _ _ => false
+  | s_val_not _ => false
   | s_val_eq _ _ => false
   | s_val_subtype _ _ => false
   | s_val_field _ _ _ => false
@@ -309,6 +327,9 @@ Fixpoint repl_var (e : s_expr) (x : string) (e' : s_expr) : s_expr :=
   | s_expr_add e1 e2 => s_expr_add (repl_var e1 x e') (repl_var e2 x e')
   | s_expr_sub e1 e2 => s_expr_sub (repl_var e1 x e') (repl_var e2 x e')
   | s_expr_lt e1 e2 => s_expr_lt (repl_var e1 x e') (repl_var e2 x e')
+  | s_expr_and e1 e2 => s_expr_and (repl_var e1 x e') (repl_var e2 x e')
+  | s_expr_or e1 e2 => s_expr_or (repl_var e1 x e') (repl_var e2 x e')
+  | s_expr_not e => s_expr_not (repl_var e x e')
   | s_expr_eq e1 e2 => s_expr_eq (repl_var e1 x e') (repl_var e2 x e')
   | s_expr_instanceof e1 c => s_expr_instanceof (repl_var e1 x e') c
   | s_expr_if e1 e2 e3 => s_expr_if (repl_var e1 x e') (repl_var e2 x e') (repl_var e3 x e')

@@ -29,13 +29,8 @@ Definition object : Type := object_memory * string.
    (excluded null) to objects. *)
 Definition heap : Type := MapRefC.t object.
 
-(* A path condition clause *)
-Inductive clause : Type :=
-| clause_pos : s_val -> clause
-| clause_neg : s_val -> clause.
-
 (* A path condition *)
-Definition path_condition : Type := list clause.
+Definition path_condition : Type := list s_val.
 
 (* A configuration of the operational semantics, 
    formed by a program, a heap, a path condition, 

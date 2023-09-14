@@ -263,7 +263,21 @@ Fixpoint expr (n : nat) : parser s_expr :=
         fun _ => expr n' <*>
         fun x => ' "<" <*>
         fun _ => expr n' <*>
-        fun y => ' ")"          ==> (fun _ => s_expr_lt x y))        <|>
+        fun y => ' ")"          ==> (fun _ => s_expr_lt x y))         <|>
+      (' "(" <*>
+        fun _ => expr n' <*>
+        fun x => ' "&&" <*>
+        fun _ => expr n' <*>
+        fun y => ' ")"          ==> (fun _ => s_expr_and x y))        <|>
+      (' "(" <*>
+        fun _ => expr n' <*>
+        fun x => ' "||" <*>
+        fun _ => expr n' <*>
+        fun y => ' ")"          ==> (fun _ => s_expr_or x y))         <|>
+      (' "(" <*>
+        fun _ => ' "~" <*>
+        fun _ => expr n' <*>
+        fun x => ' ")"          ==> (fun _ => s_expr_not x))          <|>
       (' "(" <*>
         fun _ => expr n' <*>
         fun x => ' "=" <*>

@@ -92,6 +92,9 @@ Fixpoint val_to_dstr (σ : s_val) : dstring :=
   | s_val_add σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " + ")) (val_to_dstr σ2)) (from_string ")")
   | s_val_sub σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " - ")) (val_to_dstr σ2)) (from_string ")")
   | s_val_lt σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " < ")) (val_to_dstr σ2)) (from_string ")")
+  | s_val_and σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " && ")) (val_to_dstr σ2)) (from_string ")")
+  | s_val_or σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " || ")) (val_to_dstr σ2)) (from_string ")")
+  | s_val_not σ1 => append (append (from_string "(~") (val_to_dstr σ1)) (from_string ")")
   | s_val_eq σ1 σ2 => append (append (append (append (from_string "(") (val_to_dstr σ1)) (from_string " = ")) (val_to_dstr σ2)) (from_string ")")
   | s_val_subtype σ t => append (append (append (append (from_string "(") (val_to_dstr σ)) (from_string " <: ")) (ty_to_dstr t)) (from_string ")")
   | s_val_field s1 fname s2 => append (append (append (append (append (append (from_string "(Y") (symb_to_dstr s1)) (from_string ".")) (from_string fname)) (from_string " = Z")) (symb_to_dstr s2)) (from_string ")")
@@ -109,6 +112,9 @@ Fixpoint expr_to_dstr (e : s_expr) : dstring :=
   | s_expr_add e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " + ")) (expr_to_dstr e2)) (from_string ")")
   | s_expr_sub e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " - ")) (expr_to_dstr e2)) (from_string ")")
   | s_expr_lt e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " < ")) (expr_to_dstr e2)) (from_string ")")
+  | s_expr_and e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " && ")) (expr_to_dstr e2)) (from_string ")")
+  | s_expr_or e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " || ")) (expr_to_dstr e2)) (from_string ")")
+  | s_expr_not e1 => append (append (from_string "(~") (expr_to_dstr e1)) (from_string ")")
   | s_expr_eq e1 e2 => append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " = ")) (expr_to_dstr e2)) (from_string ")")
   | s_expr_instanceof e1 c =>  append (append (append (append (from_string "(") (expr_to_dstr e1)) (from_string " instanceof ")) (from_string c)) (from_string ")")
   | s_expr_if e1 e2 e3 => append (append (append (append (append (from_string "if ") (expr_to_dstr e1)) (from_string " then ")) (expr_to_dstr e2)) (from_string " else ")) (expr_to_dstr e3)
@@ -159,8 +165,7 @@ Definition heap_to_dstr (H : heap) : dstring :=
 Fixpoint path_condition_to_dstr (Σ : path_condition) : dstring :=
   match Σ with
   | [] => (from_string "true")
-  | clause_pos σ :: other_Σ => append (append (val_to_dstr σ) (from_string " && ")) (path_condition_to_dstr other_Σ)
-  | clause_neg σ :: other_Σ => append (append (append (from_string "~") (val_to_dstr σ)) (from_string " && ")) (path_condition_to_dstr other_Σ)
+  | σ :: other_Σ => append (append (val_to_dstr σ) (from_string " && ")) (path_condition_to_dstr other_Σ)
   end.
 
 Definition config_to_dstr (J : config) : dstring :=

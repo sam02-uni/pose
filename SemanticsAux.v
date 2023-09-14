@@ -221,7 +221,7 @@ Let Fixpoint merge_clauses_aux (H1elts : list (s_ref_c * object)) (H2 : heap) (f
                    | s_symb_expr n => s_symb_fld n [f]
                    | s_symb_fld n l => s_symb_fld n (l ++ [f])
                    end in                              
-        option_map (fun Σ => (clause_pos (s_val_field s f s')) :: Σ) other_H1
+        option_map (fun Σ => (s_val_field s f s') :: Σ) other_H1
       | _ => None
       end
     | _ => other_H1

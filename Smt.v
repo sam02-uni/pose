@@ -81,29 +81,22 @@ Definition smt_decls (P : s_prg) : dstring :=
   (from_string "(declare-fun _null () Ref)")) LF) 
   (dconcat (from_string "") (List.map (class_to_dsmt P) (classes P))).
 
-Fixpoint value_to_dsmt (σ : s_val) : dstring :=
+Fixpoint value_to_dsmt (P : s_prg) (σ : s_val) : dstring :=
   match σ with
   | s_val_prim_c p => prim_c_to_dstr p
   | s_val_ref_c u => ref_c_to_dsmt u
-  | s_val_add σ1 σ2 => append (append (append (append (from_string "(+ ") (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string ")")
-  | s_val_sub σ1 σ2 => append (append (append (append (from_string "(- ") (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string ")")
-  | s_val_lt σ1 σ2 => append (append (append (append (from_string "(< ") (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string ")")
-  | s_val_eq σ1 σ2 => append (append (append (append (from_string "(= ") (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string ")")
-  | s_val_ite σ1 σ2 σ3 => append (append (append (append (append (append (from_string "(ite ") (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string " ")) (value_to_dsmt σ3)) (from_string ")")
-  | _ => (from_string "")
-  end.
-
-Definition clause_to_dsmt (P : s_prg) (σ : s_val) (positive : bool) : dstring :=
-  match σ with
-  | s_val_prim_c p => prim_c_to_dstr p
-  | s_val_ref_c u => ref_c_to_dsmt u
-  | s_val_lt σ1 σ2 => append (append (append (append (append (append (append (append (from_string "(assert ") (if positive then (from_string "") else (from_string "(not "))) (from_string "(< ")) (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string ")")) (if positive then (from_string "") else (from_string ")"))) (from_string ")")
-  | s_val_eq σ1 σ2 => append (append (append (append (append (append (append (append (from_string "(assert ") (if positive then (from_string "") else (from_string "(not "))) (from_string "(= ")) (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string ")")) (if positive then (from_string "") else (from_string ")"))) (from_string ")")
+  | s_val_add σ1 σ2 => append (append (append (append (from_string "(+ ") (value_to_dsmt P σ1)) (from_string " ")) (value_to_dsmt P σ2)) (from_string ")")
+  | s_val_sub σ1 σ2 => append (append (append (append (from_string "(- ") (value_to_dsmt P σ1)) (from_string " ")) (value_to_dsmt P σ2)) (from_string ")")
+  | s_val_lt σ1 σ2 => append (append (append (append (from_string "(< ") (value_to_dsmt P σ1)) (from_string " ")) (value_to_dsmt P σ2)) (from_string ")")
+  | s_val_and σ1 σ2 => append (append (append (append (from_string "(and ") (value_to_dsmt P σ1)) (from_string " ")) (value_to_dsmt P σ2)) (from_string ")")
+  | s_val_or σ1 σ2 => append (append (append (append (from_string "(or ") (value_to_dsmt P σ1)) (from_string " ")) (value_to_dsmt P σ2)) (from_string ")")
+  | s_val_not σ1 => append (append (from_string "(not ") (value_to_dsmt P σ1)) (from_string ")")
+  | s_val_eq σ1 σ2 => append (append (append (append (from_string "(= ") (value_to_dsmt P σ1)) (from_string " ")) (value_to_dsmt P σ2)) (from_string ")")
   | s_val_subtype σ t => match t with
-    | s_ty_class c => append (append (append (append (append (append (append (append (from_string "(assert ") (if positive then (from_string "") else (from_string "(not "))) (from_string "(subclass (classOf ")) (value_to_dsmt σ)) (from_string ") ")) (from_string c)) (from_string ")")) (if positive then (from_string "") else (from_string ")"))) (from_string ")")
+    | s_ty_class c => append (append (append (append (from_string "(subclass (classOf ") (value_to_dsmt P σ)) (from_string ") ")) (from_string c)) (from_string ")")
     | _ => from_string ""
     end
-  | s_val_field s1 f s2 => append (append (append (append (append (append (append (append (append (append (from_string "(assert ") (if positive then (from_string "") else (from_string "(not "))) (from_string "(= (")) (from_string f)) (from_string " ")) (ref_c_to_dsmt (s_ref_c_symb s1))) (from_string ") ")) 
+  | s_val_field s1 f s2 => append (append (append (append (append (append (from_string "(= (") (from_string f)) (from_string " ")) (ref_c_to_dsmt (s_ref_c_symb s1))) (from_string ") ")) 
        (match class_with_field P f with
         | Some C =>
           match fdecl C f with
@@ -116,18 +109,18 @@ Definition clause_to_dsmt (P : s_prg) (σ : s_val) (positive : bool) : dstring :
           | _ => from_string "" (* error (internal): class C' has no field f *)
           end         
         | _ => from_string "" (* error: no class exists with field f *)
-        end)) (from_string ")")) (if positive then (from_string "") else (from_string ")"))) (from_string ")")
-  | s_val_ite σ1 σ2 σ3 => append (append (append (append (append (append (append (append (append (append (from_string "(assert ") (if positive then (from_string "") else (from_string "(not "))) (from_string "(ite ")) (value_to_dsmt σ1)) (from_string " ")) (value_to_dsmt σ2)) (from_string " ")) (value_to_dsmt σ3)) (from_string ")")) (if positive then (from_string "") else (from_string ")"))) (from_string ")")
-  | _ => from_string ""
+        end)) (from_string ")")
+  | s_val_ite σ1 σ2 σ3 => append (append (append (append (append (append (from_string "(ite ") (value_to_dsmt P σ1)) (from_string " ")) (value_to_dsmt P σ2)) (from_string " ")) (value_to_dsmt P σ3)) (from_string ")")
+  | _ => (from_string "")
   end.
+
+Definition clause_to_dsmt (P : s_prg) (σ : s_val) : dstring :=
+  append (append (from_string "(assert ") (value_to_dsmt P σ)) (from_string ")").
 
 Fixpoint clauses_to_dsmt (P : s_prg) (Σ : path_condition) : dstring :=
   match Σ with
   | [] => from_string ""
-  | cl :: Σ' => append (match cl with
-    | clause_pos σ => append (clause_to_dsmt P σ true) LF 
-    | clause_neg σ => append (clause_to_dsmt P σ false) LF 
-    end) (clauses_to_dsmt P Σ')
+  | σ :: Σ' => append (append (clause_to_dsmt P σ) LF) (clauses_to_dsmt P Σ')
   end.
 
 Fixpoint add_vars_prim (P : s_prg) (σ : s_val) (ssPrim : SetSymb.t) : SetSymb.t :=
@@ -139,6 +132,9 @@ Fixpoint add_vars_prim (P : s_prg) (σ : s_val) (ssPrim : SetSymb.t) : SetSymb.t
   | s_val_add σ1 σ2 => add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim) 
   | s_val_sub σ1 σ2 => add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim) 
   | s_val_lt σ1 σ2 => add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim) 
+  | s_val_and σ1 σ2 => add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim) 
+  | s_val_or σ1 σ2 => add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim) 
+  | s_val_not σ1 => add_vars_prim P σ1 ssPrim
   | s_val_eq σ1 σ2 => add_vars_prim P σ2 (add_vars_prim P σ1 ssPrim)
   | s_val_field s1 f s2 => (match class_with_field P f with
         | Some C =>
@@ -164,6 +160,7 @@ Fixpoint add_vars_ref (P : s_prg) (σ : s_val) (ssRef : SetSymb.t) : SetSymb.t :
     | _ => ssRef
     end
   | s_val_eq σ1 σ2 => add_vars_ref P σ2 (add_vars_ref P σ1 ssRef)
+  | s_val_not σ1 => add_vars_ref P σ1 ssRef
   | s_val_subtype σ t => add_vars_ref P σ ssRef
   | s_val_field s1 f s2 => (match class_with_field P f with
         | Some C =>
@@ -189,6 +186,7 @@ Fixpoint add_vars_loc (P : s_prg) (σ : s_val) (ssLoc : SetLoc.t) : SetLoc.t :=
     | _ => ssLoc
     end
   | s_val_eq σ1 σ2 => add_vars_loc P σ2 (add_vars_loc P σ1 ssLoc)
+  | s_val_not σ1 => add_vars_loc P σ1 ssLoc
   | s_val_subtype σ t => add_vars_loc P σ ssLoc
   | s_val_ite σ1 σ2 σ3 => add_vars_loc P σ3 (add_vars_loc P σ2 (add_vars_loc P σ1 ssLoc))
   | _ => ssLoc
@@ -208,8 +206,11 @@ Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ssPrim ssRef : SetSymb.t)
   | s_val_add σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))
   | s_val_sub σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))
   | s_val_lt σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))
+  | s_val_and σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))
+  | s_val_or σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))
+  | s_val_not σ1 => declare_vars_clause P σ1 ssPrim ssRef ssLoc
   | s_val_eq σ1 σ2 => append (declare_vars_clause P σ1 ssPrim ssRef ssLoc) (declare_vars_clause P σ2 (add_vars_prim P σ1 ssPrim) (add_vars_ref P σ1 ssRef) (add_vars_loc P σ1 ssLoc))
-  | s_val_subtype σ t => declare_vars_clause P σ ssPrim ssRef ssLoc
+  | s_val_subtype σ1 t => declare_vars_clause P σ1 ssPrim ssRef ssLoc
   | s_val_field s1 f s2 => append (if SetSymb.mem s1 ssRef then (from_string "") else append (append (append (from_string "(declare-fun ") (ref_c_to_dsmt (s_ref_c_symb s1))) (from_string " () Ref)")) LF) (match class_with_field P f with
         | Some C =>
           match fdecl C f with
@@ -232,10 +233,7 @@ Fixpoint declare_vars_clause (P : s_prg) (σ : s_val) (ssPrim ssRef : SetSymb.t)
 Fixpoint declare_vars (P : s_prg) (Σ : path_condition) (ssPrim ssRef : SetSymb.t) (ssLoc : SetLoc.t) : dstring :=
   match Σ with
   | [] => from_string ""
-  | cl :: Σ' => match cl with
-    | clause_pos σ => append (declare_vars_clause P σ ssPrim ssRef ssLoc) (declare_vars P Σ' (add_vars_prim P σ ssPrim) (add_vars_ref P σ ssRef) (add_vars_loc P σ ssLoc))
-    | clause_neg σ => append (declare_vars_clause P σ ssPrim ssRef ssLoc) (declare_vars P Σ' (add_vars_prim P σ ssPrim) (add_vars_ref P σ ssRef) (add_vars_loc P σ ssLoc))
-    end
+  | σ :: Σ' => append (declare_vars_clause P σ ssPrim ssRef ssLoc) (declare_vars P Σ' (add_vars_prim P σ ssPrim) (add_vars_ref P σ ssRef) (add_vars_loc P σ ssLoc))
   end.
 
 Definition path_condition_to_dsmt (P : s_prg) (Σ : path_condition) : dstring :=

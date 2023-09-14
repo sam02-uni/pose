@@ -29,8 +29,8 @@ Inductive rstep : config -> config -> Prop :=
   c = class_name C ->
   new_obj_symb P c o ->
   H' = add_obj_symb H s o -> 
-  cl1 = clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) -> (* TODO redundant? *)
-  cl2 = clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c)) ->
+  cl1 = s_val_not (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) -> (* TODO redundant? *)
+  cl2 = s_val_subtype (s_val_ref_c Y) (s_ty_class c) ->
   S' = S ++ [cl1 ; cl2] ->
   (P, H, S, e) ~~> (P, H', S', e)
 | RStepGetfield2 : forall P H S e f Y s c c' C' o o' cl H' S',
@@ -43,7 +43,7 @@ Inductive rstep : config -> config -> Prop :=
   c' = class_name C' ->
   refine_obj_symb P c c' o o' ->
   H' = repl_obj H Y o' ->
-  cl = clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) ->
+  cl = s_val_subtype (s_val_ref_c Y) (s_ty_class c') ->
   S' = S ++ [cl] ->
   (P, H, S, e) ~~> (P, H', S', e)
 | RStepGetfield3 : forall P H S S' e f C t Y Z s s' o o' σ cl H',
@@ -58,7 +58,7 @@ Inductive rstep : config -> config -> Prop :=
   Z = s_prim_c_symb s' ->
   o' = upd_obj o f σ ->
   H' = repl_obj H Y o' ->
-  cl = clause_pos (s_val_field s f s') ->
+  cl = s_val_field s f s' ->
   S' = S ++ [cl] ->
   (P, H, S, e) ~~> (P, H', S', e)
 | RStepGetfield4 : forall P H S S' e f C t Y Z s s' o o' σ cl H',
@@ -73,7 +73,7 @@ Inductive rstep : config -> config -> Prop :=
   Z = s_ref_c_symb s' ->
   o' = upd_obj o f σ ->
   H' = repl_obj H Y o' ->
-  cl = clause_pos (s_val_field s f s') ->
+  cl = s_val_field s f s' ->
   S' = S ++ [cl] ->
   (P, H, S, e) ~~> (P, H', S', e)
 | RStepPutfield1 : forall P H S e f Y σ s c C o cl1 cl2 H' S',
@@ -84,8 +84,8 @@ Inductive rstep : config -> config -> Prop :=
   c = class_name C ->
   new_obj_symb P c o ->
   H' = add_obj_symb H s o ->
-  cl1 = clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) -> (* TODO redundant? *)
-  cl2 = clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c)) ->
+  cl1 = s_val_not (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) -> (* TODO redundant? *)
+  cl2 = s_val_subtype (s_val_ref_c Y) (s_ty_class c) ->
   S' = S ++ [cl1 ; cl2] ->
   (P, H, S, e) ~~> (P, H', S', e)
 | RStepPutfield2 : forall P H S e f Y σ s c c' C' o o' cl H' S',
@@ -98,7 +98,7 @@ Inductive rstep : config -> config -> Prop :=
   c' = class_name C' ->
   refine_obj_symb P c c' o o' ->
   H' = repl_obj H Y o' ->
-  cl = clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) ->
+  cl = s_val_subtype (s_val_ref_c Y) (s_ty_class c') ->
   S' = S ++ [cl] ->
   (P, H, S, e) ~~> (P, H', S', e)
 | RStepCtxGetfield : forall P H H' S S' e e' f,
@@ -248,6 +248,61 @@ Inductive cstep : config -> config -> Prop :=
   (σ1 <> s_val_prim_c (s_prim_c_int (s_int_l n)) \/ σ2 <> s_val_prim_c (s_prim_c_int (s_int_l n))) ->
   e' = s_expr_val (s_val_lt σ1 σ2) ->
   (P, H, S, e) --> (P, H, S, e')
+| CStepAnd1 : forall P H S e e',
+  e = s_expr_and (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true)) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepAnd2 : forall P H S e e',
+  e = s_expr_and (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepAnd3 : forall P H S e e',
+  e = s_expr_and (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepAnd4 : forall P H S e e',
+  e = s_expr_and (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepAnd5 : forall P H S e e' b σ1 σ2,
+  e = s_expr_and (s_expr_val σ1) (s_expr_val σ2) ->
+  (σ1 <> s_val_prim_c (s_prim_c_bool b) \/ σ2 <> s_val_prim_c (s_prim_c_bool b)) ->
+  e' = s_expr_val (s_val_and σ1 σ2) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepOr1 : forall P H S e e',
+  e = s_expr_or (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true)) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepOr2 : forall P H S e e',
+  e = s_expr_or (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true)) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepOr3 : forall P H S e e',
+  e = s_expr_or (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true)) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepOr4 : forall P H S e e',
+  e = s_expr_or (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepOr5 : forall P H S e e' b σ1 σ2,
+  e = s_expr_or (s_expr_val σ1) (s_expr_val σ2) ->
+  (σ1 <> s_val_prim_c (s_prim_c_bool b) \/ σ2 <> s_val_prim_c (s_prim_c_bool b)) ->
+  e' = s_expr_val (s_val_or σ1 σ2) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepNot1 : forall P H S e e',
+  e = s_expr_not (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepNot2 : forall P H S e e',
+  e = s_expr_not (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) ->
+  e' = s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true)) ->
+  (P, H, S, e) --> (P, H, S, e')
+| CStepNot3 : forall P H S e e' b σ,
+  e = s_expr_not (s_expr_val σ) ->
+  σ <> s_val_prim_c (s_prim_c_bool b) ->
+  e' = s_expr_val (s_val_not σ) ->
+  (P, H, S, e) --> (P, H, S, e')
 | CStepEq1 : forall P H S e n1 n2 e',
   e = s_expr_eq (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n1)))) (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n2)))) ->
   e' = s_expr_val (s_val_prim_c (s_prim_c_bool (if Nat.eqb n1 n2 then s_bool_true else s_bool_false))) ->
@@ -349,11 +404,11 @@ Inductive cstep : config -> config -> Prop :=
   (P, H, S, e) --> (P, H, S, e2)
 | CStepIf3 : forall P H S e σ e1 e2 S',
   e = s_expr_if (s_expr_val σ) e1 e2 ->
-  S' = S ++ [clause_pos σ] ->
+  S' = S ++ [σ] ->
   (P, H, S, e) --> (P, H, S', e1)
 | CStepIf4 : forall P H S e σ e1 e2 S',
   e = s_expr_if (s_expr_val σ) e1 e2 ->
-  S' = S ++ [clause_neg σ] ->
+  S' = S ++ [σ] ->
   (P, H, S, e) --> (P, H, S', e2)
 | CStepInvoke1 : forall P H S e e' l n m σ o c c' t1 t2 xM eM,
   e = s_expr_invoke (s_expr_val (s_val_ref_c l)) m (s_expr_val σ) ->
@@ -369,20 +424,20 @@ Inductive cstep : config -> config -> Prop :=
   Y = s_ref_c_symb s ->
   mdecl P c' m = Some (s_dc_m_l t1 m (s_dc_v_l t2 xM) eM) ->
   forall c, (In c O <-> overrides P m c c') ->
-  cl1 = clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) -> (* TODO redundant? *)
-  cl2 = clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) ->
-  S' = S ++ [cl1 ; cl2] ++ map (fun c => clause_neg (s_val_subtype (s_val_ref_c Y) (s_ty_class c))) O ->
+  cl1 = s_val_not (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) -> (* TODO redundant? *)
+  cl2 = s_val_subtype (s_val_ref_c Y) (s_ty_class c') ->
+  S' = S ++ [cl1 ; cl2] ++ map (fun c => s_val_not (s_val_subtype (s_val_ref_c Y) (s_ty_class c))) O ->
   e' = repl_var (repl_var eM "this" (s_expr_val (s_val_ref_c Y))) xM (s_expr_val σ) ->
   (P, H, S, e) --> (P, H, S', e')
 | CStepInvoke3 : forall P H S σ m e e1' σ1 σ2 σ' S1' S',
   (P, H, S, s_expr_invoke (s_expr_val σ1) m (s_expr_val σ')) ==> (P, H, S1', e1') ->
   e = s_expr_invoke (s_expr_val (s_val_ite σ σ1 σ2)) m (s_expr_val σ') ->
-  S' = S1' ++ [clause_pos σ] ->
+  S' = S1' ++ [σ] ->
   (P, H, S, e) --> (P, H, S', e1')
 | CStepInvoke4 : forall P H S σ m e e2' σ1 σ2 σ' S2' S',
   (P, H, S, s_expr_invoke (s_expr_val σ2) m (s_expr_val σ')) ==> (P, H, S2', e2') ->
   e = s_expr_invoke (s_expr_val (s_val_ite σ σ1 σ2)) m (s_expr_val σ') ->
-  S' = S2' ++ [clause_neg σ] ->
+  S' = S2' ++ [s_val_not σ] ->
   (P, H, S, e) --> (P, H, S', e2')
 | CStepCtxGetfield : forall P H H' S S' e e' f,
   (P, H, S, e) --> (P, H', S', e') ->  

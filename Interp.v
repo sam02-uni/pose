@@ -41,6 +41,9 @@ Let Fixpoint height_s_val (σ : s_val) : nat :=
   | s_val_add σ1 σ2 => S (Nat.max (height_s_val σ1) (height_s_val σ2))
   | s_val_sub σ1 σ2 => S (Nat.max (height_s_val σ1) (height_s_val σ2))
   | s_val_lt σ1 σ2 => S (Nat.max (height_s_val σ1) (height_s_val σ2))
+  | s_val_and σ1 σ2 => S (Nat.max (height_s_val σ1) (height_s_val σ2))
+  | s_val_or σ1 σ2 => S (Nat.max (height_s_val σ1) (height_s_val σ2))
+  | s_val_not σ1 => S (height_s_val σ1)
   | s_val_eq σ1 σ2 => S (Nat.max (height_s_val σ1) (height_s_val σ2))
   | s_val_subtype σ1 t => S (height_s_val σ1)
   | s_val_field _ _ _ => 0
@@ -58,6 +61,9 @@ Let Fixpoint height_s_expr (e : s_expr) : nat :=
   | s_expr_add e1 e2 => S (height_s_expr e1) + height_s_expr e2
   | s_expr_sub e1 e2 => S (height_s_expr e1) + height_s_expr e2
   | s_expr_lt e1 e2 => S (height_s_expr e1) + height_s_expr e2
+  | s_expr_and e1 e2 => S (height_s_expr e1) + height_s_expr e2
+  | s_expr_or e1 e2 => S (height_s_expr e1) + height_s_expr e2
+  | s_expr_not e1 => S (height_s_expr e1)
   | s_expr_eq e1 e2 => S (height_s_expr e1) + height_s_expr e2
   | s_expr_instanceof e1 c => S (height_s_expr e1)
   | s_expr_if e1 _ _ => S (height_s_expr e1)
@@ -98,8 +104,8 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
       let c := class_name C in
       let o := new_obj_symb_c P c in
       let H' := add_obj_symb H s o in
-      let cl1 := clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) in (*TODO redundant? *)
-      let cl2 := clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c)) in
+      let cl1 := s_val_not (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) in (*TODO redundant? *)
+      let cl2 := s_val_subtype (s_val_ref_c Y) (s_ty_class c) in
       let Σ' := Σ ++ [cl1 ; cl2] in
       Some (H', Σ')
     | _ => None (* error: no class in P has field f *)
@@ -111,7 +117,7 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
           let c' := class_name C' in
           let o' := refine_obj_symb_c P c' o in
           let H' := repl_obj H Y o' in
-          let cl := clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) in
+          let cl := s_val_subtype (s_val_ref_c Y) (s_ty_class c') in
           let Σ' := Σ ++ [cl] in
           Some (H', Σ')
         | _ => None (* error: no class exists with field f *)
@@ -126,7 +132,7 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
               | Some (σ, s_prim_c_symb s') =>
                 let o' := upd_obj o f σ in
                 let H' := repl_obj H Y o' in
-                let cl := clause_pos (s_val_field s f s') in
+                let cl := s_val_field s f s' in
                 let Σ' := Σ ++ [cl] in
                 Some (H', Σ')
               | _ => None
@@ -136,7 +142,7 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
               | Some (σ, s_ref_c_symb s') =>
                 let o' := upd_obj o f σ in
                 let H' := repl_obj H Y o' in
-                let cl := clause_pos (s_val_field s f s') in
+                let cl := s_val_field s f s' in
                 let Σ' := Σ ++ [cl] in
                 Some (H', Σ')
               | _ => None
@@ -157,8 +163,8 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
       let c := class_name C in
       let o := new_obj_symb_c P c in
       let H' := add_obj_symb H s o in
-      let cl1 := clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) in (*TODO redundant? *)
-      let cl2 := clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c)) in
+      let cl1 := s_val_not (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) in (*TODO redundant? *)
+      let cl2 := s_val_subtype (s_val_ref_c Y) (s_ty_class c) in
       let Σ' := Σ ++ [cl1 ; cl2] in
       Some (H', Σ')
     | _ => None
@@ -170,7 +176,7 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
           let c' := class_name C' in
           let o' := refine_obj_symb_c P c' o in
           let H' := repl_obj H Y o' in
-          let cl := clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) in
+          let cl := s_val_subtype (s_val_ref_c Y) (s_ty_class c') in
           let Σ' := Σ ++ [cl] in
           Some (H', Σ')
         | _ => None
@@ -189,6 +195,11 @@ Fixpoint rstep_c (P : s_prg) (H : heap) (Σ : path_condition) (e : s_expr) : opt
   | s_expr_sub e1 e2 => rstep_c P H Σ e1
   | s_expr_lt (s_expr_val _) e1 => rstep_c P H Σ e1
   | s_expr_lt e1 e2 => rstep_c P H Σ e1
+  | s_expr_and (s_expr_val _) e1 => rstep_c P H Σ e1
+  | s_expr_and e1 e2 => rstep_c P H Σ e1
+  | s_expr_or (s_expr_val _) e1 => rstep_c P H Σ e1
+  | s_expr_or e1 e2 => rstep_c P H Σ e1
+  | s_expr_not e1 => rstep_c P H Σ e1
   | s_expr_eq (s_expr_val _) e1 => rstep_c P H Σ e1
   | s_expr_eq e1 e2 => rstep_c P H Σ e1
   | s_expr_instanceof e1 c => rstep_c P H Σ e1
@@ -335,6 +346,45 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
   | s_expr_lt (s_expr_val σ1) (s_expr_val σ2) =>
     let e' := s_expr_val (s_val_lt σ1 σ2) in
     [(H, Σ, e')]
+  | s_expr_and (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true)) in
+    [(H, Σ, e')]
+  | s_expr_and (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) in
+    [(H, Σ, e')]
+  | s_expr_and (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) in
+    [(H, Σ, e')]
+  | s_expr_and (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) in
+    [(H, Σ, e')]
+  | s_expr_and (s_expr_val σ1) (s_expr_val σ2) =>
+    let e' := s_expr_val (s_val_and σ1 σ2) in
+    [(H, Σ, e')]
+  | s_expr_or (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true)) in
+    [(H, Σ, e')]
+  | s_expr_or (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true)) in
+    [(H, Σ, e')]
+  | s_expr_or (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true)) in
+    [(H, Σ, e')]
+  | s_expr_or (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) in
+    [(H, Σ, e')]
+  | s_expr_or (s_expr_val σ1) (s_expr_val σ2) =>
+    let e' := s_expr_val (s_val_or σ1 σ2) in
+    [(H, Σ, e')]
+  | s_expr_not (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false)) in
+    [(H, Σ, e')]
+  | s_expr_not (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) =>
+    let e' := s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_true)) in
+    [(H, Σ, e')]
+  | s_expr_not (s_expr_val σ1) =>
+    let e' := s_expr_val (s_val_not σ1) in
+    [(H, Σ, e')]
   | s_expr_eq (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n1)))) (s_expr_val (s_val_prim_c (s_prim_c_int (s_int_l n2)))) =>
     let e' := s_expr_val (s_val_prim_c (s_prim_c_bool (if Nat.eqb n1 n2 then s_bool_true else s_bool_false))) in
     [(H, Σ, e')]
@@ -387,8 +437,8 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
   | s_expr_if (s_expr_val (s_val_prim_c (s_prim_c_bool s_bool_false))) e1 e2 =>
     [(H, Σ, e2)]
   | s_expr_if (s_expr_val σ) e1 e2 =>
-    let Σ1' := Σ ++ [clause_pos σ] in
-    let Σ2' := Σ ++ [clause_neg σ] in
+    let Σ1' := Σ ++ [σ] in
+    let Σ2' := Σ ++ [s_val_not σ] in
     [(H, Σ1', e1) ; (H, Σ2', e2)]
   | s_expr_invoke (s_expr_val (s_val_ref_c (s_ref_c_loc (s_loc_l n)))) m (s_expr_val σ) =>
     let l := s_ref_c_loc (s_loc_l n) in
@@ -411,9 +461,9 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
       match mdecl P c' m with
       | Some (s_dc_m_l t1 m (s_dc_v_l t2 xM) eM) =>
         let O := overriders P m c' in
-        let cl1 := clause_neg (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) in (*TODO redundant? *)
-        let cl2 := clause_pos (s_val_subtype (s_val_ref_c Y) (s_ty_class c')) in
-        let Σ' := Σ ++ [cl1 ; cl2] ++ List.map (fun c => clause_neg (s_val_subtype (s_val_ref_c Y) (s_ty_class c))) O in
+        let cl1 := s_val_not (s_val_eq (s_val_ref_c Y) (s_val_ref_c s_ref_c_null)) in (*TODO redundant? *)
+        let cl2 := s_val_subtype (s_val_ref_c Y) (s_ty_class c') in
+        let Σ' := Σ ++ [cl1 ; cl2] ++ List.map (fun c => s_val_not (s_val_subtype (s_val_ref_c Y) (s_ty_class c))) O in
         let e' := repl_var (repl_var eM "this" (s_expr_val (s_val_ref_c Y))) xM (s_expr_val σ) in
         [(H, Σ', e')]
       | _ => []
@@ -423,13 +473,13 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
     let e2 := s_expr_invoke (s_expr_val σ2) m (s_expr_val σ') in
     List.map (fun x : heap * path_condition * s_expr => 
       match x with
-      | (_, Σ1', e1') => let Σ' := Σ1' ++ [clause_pos σ] in
+      | (_, Σ1', e1') => let Σ' := Σ1' ++ [σ] in
         (H, Σ', e1')
       end
     ) (cstep_c_fp P H Σ e1) ++
     List.map (fun x : heap * path_condition * s_expr =>
       match x with
-      | (_, Σ2', e2') => let Σ' := Σ2' ++ [clause_neg σ] in
+      | (_, Σ2', e2') => let Σ' := Σ2' ++ [s_val_not σ] in
         (H, Σ', e2')
       end
     ) (cstep_c_fp P H Σ e2)
@@ -472,6 +522,26 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
   | s_expr_lt e1 e2 => List.map (fun x : heap * path_condition * s_expr =>
     match x with
     | (H', Σ', e1') => (H', Σ', s_expr_lt e1' e2)
+    end) (cstep_c_fp P H Σ e1)
+  | s_expr_and (s_expr_val σ) e1 => List.map (fun x : heap * path_condition * s_expr =>
+    match x with
+    | (H', Σ', e1') => (H', Σ', s_expr_and (s_expr_val σ) e1')
+    end) (cstep_c_fp P H Σ e1)
+  | s_expr_and e1 e2 => List.map (fun x : heap * path_condition * s_expr =>
+    match x with
+    | (H', Σ', e1') => (H', Σ', s_expr_and e1' e2)
+    end) (cstep_c_fp P H Σ e1)
+  | s_expr_or (s_expr_val σ) e1 => List.map (fun x : heap * path_condition * s_expr =>
+    match x with
+    | (H', Σ', e1') => (H', Σ', s_expr_or (s_expr_val σ) e1')
+    end) (cstep_c_fp P H Σ e1)
+  | s_expr_or e1 e2 => List.map (fun x : heap * path_condition * s_expr =>
+    match x with
+    | (H', Σ', e1') => (H', Σ', s_expr_or e1' e2)
+    end) (cstep_c_fp P H Σ e1)
+  | s_expr_not e1 => List.map (fun x : heap * path_condition * s_expr =>
+    match x with
+    | (H', Σ', e1') => (H', Σ', s_expr_not e1')
     end) (cstep_c_fp P H Σ e1)
   | s_expr_eq (s_expr_val σ) e1 => List.map (fun x : heap * path_condition * s_expr =>
     match x with
