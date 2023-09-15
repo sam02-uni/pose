@@ -3,6 +3,8 @@ From Coq Require Import Init.Nat.
 From Coq Require Import Bool.Bool.
 From Coq Require Import Arith.Arith.
 From Coq Require Import Lists.List. Import ListNotations.
+From Coq Require Import Program.Wf.
+From Hammer Require Import Tactics.
 From POSE Require Import Aux.
 From POSE Require Import Syntax.
 From POSE Require Import SemanticsTypes.
@@ -233,5 +235,20 @@ Definition merge_clauses (H1' H2' : heap) (f : string) : option path_condition :
   | Some Σ1, Some Σ2 => Some (Σ1 ++ Σ2)
   | _, _ => None
   end.
+
+Definition height_2pc (Σ1 Σ2 : path_condition) : nat :=
+  (length Σ1) + (length Σ2).
+
+Program Fixpoint merge_pc (σ : s_val) (Σ1 Σ2 : path_condition) {measure (height_2pc Σ1 Σ2)} : path_condition :=
+  match Σ1, Σ2 with
+  | σ1 :: Σ1', σ2 :: Σ2' => if s_val_eqb σ1 σ2 then σ1 :: (merge_pc σ Σ1' Σ2') else (s_val_or (s_val_not σ) σ1) :: (merge_pc σ Σ1' Σ2)
+  | [], σ2 :: Σ2' => (s_val_or σ σ2) :: (merge_pc σ [] Σ2')
+  | σ1 :: Σ1', [] => (s_val_or (s_val_not σ) σ1) :: (merge_pc σ Σ1' [])
+  | [], [] => []
+  end.
+Next Obligation.
+  unfold height_2pc. assert (Datatypes.length (σ1 :: Σ1') = S (Datatypes.length Σ1')) by sauto. rewrite -> H.
+  assert (Datatypes.length (σ2 :: Σ2') = S (Datatypes.length Σ2')) by sauto. rewrite -> H0. sauto.
+Qed.
 
 End MergeDefs.

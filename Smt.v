@@ -160,6 +160,8 @@ Fixpoint add_vars_ref (P : s_prg) (σ : s_val) (ssRef : SetSymb.t) : SetSymb.t :
     | _ => ssRef
     end
   | s_val_eq σ1 σ2 => add_vars_ref P σ2 (add_vars_ref P σ1 ssRef)
+  | s_val_and σ1 σ2 => add_vars_ref P σ2 (add_vars_ref P σ1 ssRef) 
+  | s_val_or σ1 σ2 => add_vars_ref P σ2 (add_vars_ref P σ1 ssRef) 
   | s_val_not σ1 => add_vars_ref P σ1 ssRef
   | s_val_subtype σ t => add_vars_ref P σ ssRef
   | s_val_field s1 f s2 => (match class_with_field P f with
@@ -186,6 +188,8 @@ Fixpoint add_vars_loc (P : s_prg) (σ : s_val) (ssLoc : SetLoc.t) : SetLoc.t :=
     | _ => ssLoc
     end
   | s_val_eq σ1 σ2 => add_vars_loc P σ2 (add_vars_loc P σ1 ssLoc)
+  | s_val_and σ1 σ2 => add_vars_loc P σ2 (add_vars_loc P σ1 ssLoc) 
+  | s_val_or σ1 σ2 => add_vars_loc P σ2 (add_vars_loc P σ1 ssLoc) 
   | s_val_not σ1 => add_vars_loc P σ1 ssLoc
   | s_val_subtype σ t => add_vars_loc P σ ssLoc
   | s_val_ite σ1 σ2 σ3 => add_vars_loc P σ3 (add_vars_loc P σ2 (add_vars_loc P σ1 ssLoc))

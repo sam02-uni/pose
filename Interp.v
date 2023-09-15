@@ -271,9 +271,9 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
     let e2 := s_expr_getfield (s_expr_val σ2) f in
     match rstep_c_star P H Σ e1 with
     | Some (H1tmp, Σ1tmp) => match cstep_c_fp P H1tmp Σ1tmp e1 with
-      | [(H1', Σ1', s_expr_val σ1')] => match rstep_c_star P H1' Σ1' e2 with
+      | [(H1', Σ1', s_expr_val σ1')] => match rstep_c_star P H1' Σ e2 with
           | Some (Htmp', Σtmp') => match cstep_c_fp P Htmp' Σtmp' e2 with
-            | [(H', Σ', s_expr_val σ2')] =>
+            | [(H', Σ2', s_expr_val σ2')] => let Σ' := merge_pc σ Σ1' Σ2' in
               [(H', Σ', s_expr_val (s_val_ite σ σ1' σ2'))]
             | _ => []
             end
@@ -317,7 +317,7 @@ Program Fixpoint cstep_c_fp (P : s_prg) (H : heap) (Σ : path_condition) (e : s_
       | [(H1', Σ1', _)], [(H2', Σ2', _)] =>
         match merge_c H1' H2' f σ, merge_clauses H1' H2' f with
         | Some H', Some Σetc => 
-          let Σ' := Σ1' ++ Σ2' ++ Σetc in
+          let Σ' := (merge_pc σ Σ1' Σ2') ++ Σetc in
           [(H', Σ', e')]
         | _, _ => []
         end
