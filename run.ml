@@ -2,6 +2,8 @@ open Pose
 
 let filename_src = ref ""
 let z3 = ref "/usr/local/bin/z3"
+let z3_time = ref 0.0
+let z3_queries = ref 0
 
 let rec nat_of_int n =
   if n = 0 then O else S (nat_of_int (n - 1))
@@ -37,6 +39,8 @@ let rec print_dstring_endline ds =
 let print_dstrings_endline dss =
   let _ = map (fun ds -> let _ = print_dstring_endline ds in print_endline "\n=========\n") dss in ()
 
+let print_stats () = print_endline ("Spent " ^ (string_of_float !z3_time) ^ " seconds in " ^ (string_of_int !z3_queries) ^ " Z3 queries")
+
 let configs_at n =
 match (parse (src ())) with
   | (_, SomeE p) -> print_dstrings_endline (step_to_dstr (step_at p (nat_of_int n)))
@@ -50,6 +54,11 @@ let count_at n =
 let smt_at n =
 match (parse (src ())) with
   | (_, SomeE p) -> print_dstrings_endline (step_to_dsmt (step_at p (nat_of_int n)))
+  | _ -> print_endline "parsing error"
+
+let stats_at n =
+match (parse (src ())) with
+  | (_, SomeE p) -> let _ = step_at p (nat_of_int n) in print_stats ()
   | _ -> print_endline "parsing error"
 
 (* Returns the leaves gathered up to depth n. *)
@@ -75,11 +84,16 @@ match (parse (src ())) with
   | (_, SomeE p) -> print_dstrings_endline (step_to_dsmt (leaves_at p n))
   | _ -> print_endline "parsing error"
 
+let lstats_at n =
+match (parse (src ())) with
+  | (_, SomeE p) -> let _ = leaves_at p n in print_stats ()
+  | _ -> print_endline "parsing error"
+
 (*** Pruning with Z3 ***)
 
 let save_to_file dsmt = write_whole_file "in.smt" dsmt
 
-let run_z3 () = let _ = Sys.command (!z3 ^ " -smt2 in.smt >out.txt") in ()
+let run_z3 () = let t = Sys.time() in let _ = Sys.command (!z3 ^ " -smt2 in.smt >out.txt") in let _ = (z3_time := !z3_time +. (Sys.time() -. t) ; z3_queries := !z3_queries + 1) in ()
 
 let read_result () =
   let s = read_whole_file "out.txt" in
@@ -129,6 +143,11 @@ match (parse (src ())) with
   | (_, SomeE p) -> print_endline (string_of_int (List.length (step_at_prune p n)))
   | _ -> print_endline "parsing error"
 
+let stats_at_prune n =
+match (parse (src ())) with
+  | (_, SomeE p) -> let _ = step_at_prune p n in print_stats ()
+  | _ -> print_endline "parsing error"
+
 (* Returns the leaves gathered up to depth n. Performs
    pruning with Z3. *)
 let leaves_at_prune p n  =
@@ -168,12 +187,18 @@ match (parse (src ())) with
   | (_, SomeE p) -> print_endline (string_of_int (List.length (leaves_at_prune p n)))
   | _ -> print_endline "parsing error"
 
+let lstats_at_prune n =
+match (parse (src ())) with
+  | (_, SomeE p) -> let _ = leaves_at_prune p n in print_stats ()
+  | _ -> print_endline "parsing error"
+
 (*** Entry point ***)
 
 type t_to_print =
 | Configs
 | Count
 | Smt
+| Stats
 
 let () =
   let depth = ref 0 in
@@ -197,6 +222,8 @@ let () =
       to_print := Count
     else if Sys.argv.(i) = "-s" then
       to_print := Smt
+    else if Sys.argv.(i) = "-t" then
+      to_print := Stats
     else if Sys.argv.(i) = "-p" then
       prune := true
     else if Sys.argv.(i) = "-l" then
@@ -211,6 +238,7 @@ let () =
     (print_endline ("Usage: " ^ Sys.argv.(0) ^ " [-c|-s] [-l] [-p] [-z <z3_path>] source depth");
     print_endline "  -c: prints count of configs";
     print_endline "  -s: prints smtlib of path condition";
+    print_endline "  -t: prints time statistics of Z3 queries";
     print_endline "  -l: considers leaves instead of configs at depth";
     print_endline "  -p: prunes infeasible with Z3";
     print_endline "  -z <z3_path>: specifies the path of the Z3 executable (default: /usr/local/bin/z3)")
@@ -219,8 +247,10 @@ let () =
   | Configs -> if !prune then (lconfigs_at_prune !depth) else (lconfigs_at !depth)
   | Count -> if !prune then (lcount_at_prune !depth) else (lcount_at !depth)
   | Smt -> if !prune then (lsmt_at_prune !depth) else (lsmt_at !depth)
+  | Stats -> if !prune then (lstats_at_prune !depth) else (lstats_at !depth)
   else
   match !to_print with
   | Configs -> if !prune then (configs_at_prune !depth) else (configs_at !depth)
   | Count -> if !prune then (count_at_prune !depth) else (count_at !depth)
   | Smt -> if !prune then (smt_at_prune !depth) else (smt_at !depth)
+  | Stats -> if !prune then (stats_at_prune !depth) else (stats_at !depth)
