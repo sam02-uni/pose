@@ -1,6 +1,6 @@
 # POSE: Path-optimal symbolic execution prototype
 
-This repository contains the prototype implementation of path-optimal symbolic execution. To compile and run it you need [Coq](https://coq.inria.fr/), [OCaml](https://ocaml.org/), usually coming with Coq, [make](https://www.gnu.org/software/make/) and [Z3](https://github.com/Z3Prover/z3). Build the Coq files and extract the OCaml implementation by running
+This repository contains the prototype implementation of path-optimal symbolic execution. To compile and run it you need [Coq](https://coq.inria.fr/), [OCaml](https://ocaml.org/), usually coming with Coq, [CoqHammer](https://coqhammer.github.io/), [make](https://www.gnu.org/software/make/) and [Z3](https://github.com/Z3Prover/z3). Build the Coq files and extract the OCaml implementation by running
 
     $ make
 
