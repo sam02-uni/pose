@@ -18,6 +18,17 @@ class AddBeforeParameters extends Object {
   Entry e;
 }
 
+class Researcher extends Object {
+  Object o;
+  int index;
+  Entry entry;
+}
+
+class Setter extends Object{
+  int index;
+  Object element;
+}
+
 class DllEntryLoopFrame extends Object {
   Entry entry;
   int i;
@@ -61,6 +72,73 @@ class DoubleLinkedList extends Object {
     let foo5 := ((newEntry.next).previous := newEntry) in
     let foo6 := (this.size := ((this.size) + 1)) in
     newEntry;
+
+  Void remove(Entry e) :=
+    let foo1 := ((e.previous).next := (e.next)) in
+    let f002 := ((e.next).previous := (e.previous)) in
+    let foo3 := (this.size := ((this.size) - 1)) in
+    new Void;
+
+  Object removeAtIndex(int ind) :=
+    let e := (this.entry[ind]) in
+    let foo1 := (this.remove[e]) in
+    (e.element);
+
+  Object removeFirst(Void n) :=
+    let e := ((this.header).next) in
+    let objFirst := (e.element) in
+    let foo1 := (this.remove[e]) in
+    objFirst;
+
+  Object removeLast(Void n) :=
+    let e := ((this.header).previous) in
+    let objLast := (e.element) in
+    let foo1 := (this.remove[e]) in
+    objLast;
+
+  Object getFirst(Void arg) :=
+    let h := ((this.header).next) in 
+    if ((this.size) = 0) then Void else
+    (h.element);
+
+  Object getLast(Void arg) :=
+    let h := ((this.header).previous) in 
+    if ((this.size) = 0) then Void else
+    (h.element);
+
+  Object get(int ind) :=
+    let e := (this.entry[ind]) in
+    (e.element);
+
+  Object set(Setter s) :=
+    let e := (this.entry[(s.index)]) in
+    let oldVal := (e.element) in
+    let foo1 := (e.element := (s.element)) in
+    oldVal;
+      
+  int searchNull(Researcher res) :=
+    let e := (res.entry) in
+    if ((e.element) = null) then (res.index) else if ((e.next) = null) then (0 - 1) else
+    let foo1 := (res.entry := (e.next)) in
+    let foo2 := (res.index := ((res.index) + 1)) in
+    (this.searchNull[res]);
+
+  int search(Researcher res) :=
+    let e := (res.entry) in
+    if ((e.element) = (res.o)) then (res.index) else if ((e.next) = null) then (0 - 1) else
+    let foo1 := (res.entry := (e.next)) in
+    let foo2 := (res.index := ((res.index) + 1)) in
+    (this.search[res]);
+
+  int indexOf(Object o) :=
+    let res := new Researcher in
+    let e := ((this.header).next) in
+    let foo1 := (res.o := o) in
+    let foo2 := (res. entry := e) in
+    let foo3 := (res.index := 0) in
+    if (o = null) then (this.searchNull[res]) else
+    (this.search[res]);
+
 }
 
 let l := Y0 in
@@ -68,4 +146,12 @@ let o := Y1 in
 let p := new AddParameters in
 let foo1 := (p.index := 4) in
 let foo2 := (p.elem := o) in
-(l.add[p])
+let foo3 := (l.add[p]) in
+let foo4 := (l.removeAtIndex[(p.index)]) in 
+let foo5 := (l.getFirst[null]) in
+let foo6 := (l.getLast[null]) in
+let foo7 := (l.get[1]) in
+let foo8 := (l.indexOf[o]) in
+let foo9 := (l.removeFirst[null]) in
+let foo10 := (l.removeLast[null]) in
+Void
